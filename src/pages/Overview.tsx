@@ -445,16 +445,16 @@ export function Overview() {
               icon={<OverviewGlyph kind="rows" />}
             />
             <MetricCard
-              label="Training-ready Tracks"
-              value={trainingReadyTracks ? `${trainingReadyTracks} ${trainingReadyTracks === 1 ? 'track' : 'tracks'}` : 'None established'}
-              subtext={trainingReadyTracks ? 'Marked ready in the current evidence audit' : 'No track is marked ready in this audit'}
+              label="Model Readiness"
+              value={trainingReadyTracks ? `${trainingReadyTracks} ${trainingReadyTracks === 1 ? 'validated track' : 'validated tracks'}` : 'Evidence-gated'}
+              subtext={trainingReadyTracks ? 'Meets the current evidence threshold' : 'No track meets the training threshold in this audit'}
               icon={<OverviewGlyph kind="gauge" />}
               trend="neutral"
             />
             <MetricCard
-              label="Open Evidence Issues"
-              value={criticalNotices + warningNotices}
-              subtext={`${criticalNotices} critical · ${warningNotices} warnings`}
+              label="Evidence Reviews"
+              value={`${criticalNotices + warningNotices} active`}
+              subtext={`${criticalNotices} high-priority ${criticalNotices === 1 ? 'finding' : 'findings'} · ${warningNotices} ${warningNotices === 1 ? 'warning' : 'warnings'}`}
               icon={<OverviewGlyph kind="alert" />}
             />
           </div>
