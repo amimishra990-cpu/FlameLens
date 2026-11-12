@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import katex from 'katex';
 
 function MathFormula({ formula }: { formula: string }) {
@@ -37,23 +36,33 @@ function FloatingBook() {
     const key = new THREE.DirectionalLight(0xffd996, 3.4); key.position.set(-3, 5, 5); scene.add(key);
     const rim = new THREE.PointLight(0x48cbed, 18, 15); rim.position.set(3, 1, -2); scene.add(rim);
     const group = new THREE.Group(); scene.add(group);
-    let disposed = false;
-    new FBXLoader().load('/models/quantum/book_encyclopedia_set_01_1k.fbx', (asset) => {
-      if (disposed) return;
-      const bounds = new THREE.Box3().setFromObject(asset); const size = bounds.getSize(new THREE.Vector3());
-      const scale = 4.2 / Math.max(size.x, size.y, size.z);
-      asset.scale.setScalar(scale); bounds.setFromObject(asset);
-      const center = bounds.getCenter(new THREE.Vector3()); asset.position.sub(center);
-      asset.traverse((child) => { if ((child as THREE.Mesh).isMesh) { const mesh = child as THREE.Mesh; mesh.castShadow = true; mesh.receiveShadow = true; mesh.material = new THREE.MeshStandardMaterial({ color: 0x735333, roughness: .42, metalness: .12, side: THREE.DoubleSide }); } });
-      group.add(asset);
-    });
+    // Build a single closed volume instead of loading the source set's row of books.
+    // The paper block and covers share one center, so the hero mesh reads as one book.
+    const cover = new THREE.MeshStandardMaterial({ color: 0x513820, roughness: .66, metalness: .08 });
+    const pages = new THREE.MeshStandardMaterial({ color: 0xd9c9a5, roughness: .88 });
+    const gilt = new THREE.MeshStandardMaterial({ color: 0xb59252, roughness: .38, metalness: .55 });
+    const addBox = (w: number, h: number, d: number, material: THREE.Material, x = 0, y = 0, z = 0) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+      mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh);
+    };
+    addBox(3.55, .22, 2.35, cover, 0, -.63, 0);
+    addBox(3.42, 1.02, 2.23, pages, 0, -.005, 0);
+    addBox(3.55, .22, 2.35, cover, 0, .63, 0);
+    addBox(.34, 1.42, 2.35, cover, -1.61, 0, 0);
+    // Fine gold rules on the front cover give the book scale and detail.
+    addBox(2.7, .018, .018, gilt, .08, .752, .78);
+    addBox(2.7, .018, .018, gilt, .08, .752, -.78);
+    addBox(.018, .018, 1.58, gilt, -1.27, .752, 0);
+    addBox(.018, .018, 1.58, gilt, 1.43, .752, 0);
+    group.rotation.x = -.12;
+    group.rotation.z = -.08;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     let frame = 0;
     const draw = (time: number) => { frame = requestAnimationFrame(draw); if (!reduced) { group.rotation.y = Math.sin(time * .00022) * .12; group.rotation.x = Math.sin(time * .00031) * .035; group.position.y = Math.sin(time * .0007) * .08; } renderer.render(scene, camera); };
     draw(0);
     const resize = () => { if (!node.clientWidth) return; camera.aspect = node.clientWidth / node.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(node.clientWidth, node.clientHeight); };
     const observer = new ResizeObserver(resize); observer.observe(node);
-    return () => { disposed = true; cancelAnimationFrame(frame); observer.disconnect(); renderer.dispose(); renderer.domElement.remove(); scene.traverse((o) => { if ((o as THREE.Mesh).geometry) (o as THREE.Mesh).geometry.dispose(); }); };
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); renderer.dispose(); renderer.domElement.remove(); scene.traverse((o) => { if ((o as THREE.Mesh).geometry) (o as THREE.Mesh).geometry.dispose(); }); cover.dispose(); pages.dispose(); gilt.dispose(); };
   }, []);
   return <div className="qh-book-scene" ref={host} aria-label="Floating three-dimensional antique book" role="img"><span>FLAMELENS · FIELD NOTES</span></div>;
 }
