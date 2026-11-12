@@ -48,6 +48,7 @@ export function MissionDeck() {
   const [unlockedThrough, setUnlockedThrough] = useState(0);
   const [solved, setSolved] = useState<string[]>([]);
   const [choiceId, setChoiceId] = useState<string | null>(null);
+  const [debriefOpen, setDebriefOpen] = useState(false);
   const [guideAction, setGuideAction] = useState<'Idle' | 'Walk' | 'Special'>('Idle');
   const reducedMotion = useReducedMotion();
   const level = MISSION_LEVELS[levelIndex];
@@ -69,12 +70,14 @@ export function MissionDeck() {
     if (index > unlockedThrough || index === levelIndex) return;
     setLevelIndex(index);
     setChoiceId(null);
+    setDebriefOpen(false);
   };
   const submitChoice = (id: string) => {
     if (choice?.correct) return;
     const selected = level.choices.find((item) => item.id === id);
     if (!selected) return;
     setChoiceId(id);
+    setDebriefOpen(true);
     if (selected.correct) {
       setSolved((items) => items.includes(level.id) ? items : [...items, level.id]);
       setUnlockedThrough((value) => Math.max(value, Math.min(levelIndex + 1, MISSION_LEVELS.length - 1)));
@@ -85,6 +88,7 @@ export function MissionDeck() {
     if (!choice?.correct || levelIndex >= MISSION_LEVELS.length - 1) return;
     setLevelIndex((index) => index + 1);
     setChoiceId(null);
+    setDebriefOpen(false);
     setGuideAction('Walk');
   };
   const restart = () => {
@@ -92,6 +96,7 @@ export function MissionDeck() {
     setUnlockedThrough(0);
     setSolved([]);
     setChoiceId(null);
+    setDebriefOpen(false);
     setGuideAction('Idle');
   };
 
@@ -144,7 +149,18 @@ export function MissionDeck() {
               <div><span>{choice.correct ? 'DECISION SUPPORTED' : 'RECHECK THE RECORD'}</span><p>{choice.feedback}</p></div>
               {choice.correct && levelIndex < MISSION_LEVELS.length - 1 ? <button type="button" onClick={nextLevel}>Unlock next level <b aria-hidden="true">→</b></button> : !choice.correct ? <button type="button" onClick={() => setChoiceId(null)}>Try again <b aria-hidden="true">↻</b></button> : null}
             </div>}
-            <div className="md-evidence-debrief"><span>FIELD NOTE</span><p>{level.debrief}</p></div>
+            <div className="md-evidence-debrief">
+              <button
+                type="button"
+                className="md-debrief-toggle"
+                aria-expanded={debriefOpen}
+                onClick={() => setDebriefOpen((open) => !open)}
+              >
+                <span>FIELD NOTE</span>
+                <b>{debriefOpen ? 'Hide ▴' : 'Show note ▾'}</b>
+              </button>
+              {debriefOpen && <p>{level.debrief}</p>}
+            </div>
           </>}
         </div>
         <aside className="md-guide" aria-label="Mission guide">

@@ -182,7 +182,7 @@ export function InteractiveCard({
         {trailing && <div className="interactive-card-trailing">{trailing}</div>}
       </div>
 
-      <p className="interactive-card-description">{description}</p>
+      {description && <p className="interactive-card-description">{description}</p>}
 
       {metrics.length > 0 && (
         <div className="interactive-card-metrics">

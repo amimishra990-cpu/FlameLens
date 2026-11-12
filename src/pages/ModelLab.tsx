@@ -114,10 +114,16 @@ function SootVisualization({ audit }: { audit: DatasetAudit }) {
 function FieldDictionary({ audits }: { audits: DatasetAudit[] }) {
   const allFields = audits.flatMap((audit) => audit.fields.map((field) => ({ audit, field })));
   const [role, setRole] = useState<'all' | ModelFieldDefinition['role']>('all');
-  const displayed = role === 'all' ? allFields : allFields.filter(({ field }) => field.role === role);
+  const [query, setQuery] = useState('');
+  const normalizedQuery = query.trim().toLowerCase();
+  const displayed = allFields.filter(({ audit, field }) => {
+    if (role !== 'all' && field.role !== role) return false;
+    if (!normalizedQuery) return true;
+    return [field.field, field.definition, field.method, field.unit, sourceDisplay(audit.sourceId)].some((text) => text.toLowerCase().includes(normalizedQuery));
+  });
   return <section className="ml-section" aria-labelledby="ml-dictionary-title">
-    <div className="ml-section-heading"><div><span className="ml-eyebrow">FIELD CONTRACT</span><h2 id="ml-dictionary-title">Inputs, outputs & exclusions</h2><p>Definitions preserve the original source field names. “Not in local table” stays distinct from a blank measurement.</p></div><label className="ml-filter">Show fields<select value={role} onChange={(event) => setRole(event.target.value as typeof role)}><option value="all">All field roles</option><option value="candidate input">Candidate inputs</option><option value="candidate output">Candidate outputs</option><option value="excluded leakage">Leakage exclusions</option><option value="grouping / provenance">Grouping / provenance</option><option value="context only">Context only</option></select></label></div>
-    <div className="ml-table-scroll"><table className="ml-field-table"><thead><tr><th>Source field</th><th>Role</th><th>Unit</th><th>Definition & method</th><th>Local coverage</th></tr></thead><tbody>{displayed.map(({ audit, field }, index) => <tr key={`${audit.sourceId}-${field.field}-${index}`}><th scope="row"><span>{sourceDisplay(audit.sourceId)}</span><code>{field.field}</code></th><td><span className={`ml-role ml-role-${roleClass(field.role)}`}>{field.role}</span></td><td>{field.unit}</td><td><span>{field.definition}</span><small>{field.method}{field.caution ? ` ${field.caution}` : ''}</small></td><td>{fieldStatus(field)}</td></tr>)}</tbody></table></div>
+    <div className="ml-section-heading"><div><span className="ml-eyebrow">FIELD CONTRACT</span><h2 id="ml-dictionary-title">Inputs, outputs & exclusions</h2><p>Definitions preserve the original source field names. “Not in local table” stays distinct from a blank measurement.</p></div><div className="ml-dictionary-controls"><label className="ml-field-search">Filter keyword<input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search field, unit, or source…"/></label><label className="ml-filter">Show fields<select value={role} onChange={(event) => setRole(event.target.value as typeof role)}><option value="all">All field roles</option><option value="candidate input">Candidate inputs</option><option value="candidate output">Candidate outputs</option><option value="excluded leakage">Leakage exclusions</option><option value="grouping / provenance">Grouping / provenance</option><option value="context only">Context only</option></select></label></div></div>
+    <div className="ml-table-scroll"><table className="ml-field-table"><thead><tr><th>Source field</th><th>Role</th><th>Unit</th><th>Definition & method</th><th>Local coverage</th></tr></thead><tbody>{displayed.map(({ audit, field }, index) => <tr key={`${audit.sourceId}-${field.field}-${index}`} data-role={field.role}><th scope="row"><span>{sourceDisplay(audit.sourceId)}</span><code>{field.field}</code></th><td><span className={`ml-role ml-role-${roleClass(field.role)}`}>{field.role}</span></td><td>{field.unit}</td><td><span>{field.definition}</span><small>{field.method}{field.caution ? ` ${field.caution}` : ''}</small></td><td>{fieldStatus(field)}</td></tr>)}</tbody></table></div>
   </section>;
 }
 
@@ -134,34 +140,88 @@ function ExtinctionBranches({ audits, active, onSelect }: { audits: DatasetAudit
 
 function TrackWorkspace({ track, audits }: { track: ModelTrackDefinition; audits: DatasetAudit[] }) {
   const [activeSourceId, setActiveSourceId] = useState(track.sourceIds[0]);
-  useEffect(() => setActiveSourceId(track.sourceIds[0]), [track.id]);
+  const [workspaceTab, setWorkspaceTab] = useState<'experiment' | 'audit' | 'contract'>('experiment');
+  useEffect(() => {
+    setActiveSourceId(track.sourceIds[0]);
+    setWorkspaceTab('experiment');
+  }, [track.id]);
   const activeAudit = audits.find((audit) => audit.sourceId.toLowerCase() === activeSourceId) ?? audits[0];
   const evidenceCount = audits.reduce((sum, audit) => sum + audit.nonEmptyRows, 0);
+  const fieldCount = (track.id === 'extinction' ? [activeAudit] : audits).reduce((sum, audit) => sum + audit.fields.length, 0);
   if (!activeAudit) return null;
   return <>
     <header className={`ml-track-hero ml-track-${track.id}`}>
       <div className="ml-track-copy"><div className="ml-track-kicker"><span>MODEL WORKSPACE / {track.number}</span><span>RESEARCH-GROUNDED SIMULATION</span></div><h1>{track.title}</h1><p>{track.objective}</p><div className="ml-track-tags"><StatusTag tone="safe">Virtual experiments available</StatusTag><StatusTag tone="neutral">{evidenceCount} supporting local rows</StatusTag><StatusTag tone="neutral">Batch runs execute locally</StatusTag></div></div>
       <div className="ml-target-statement"><span className="ml-eyebrow">WHAT THIS WORKSPACE ESTIMATES</span><p>{track.id === 'extinction' ? 'A case-based estimate of the recorded FLEX Test end label distribution for nearby conditions.' : track.id === 'spread' ? 'PMMA flame spread rate from measured NASA BASS-II conditions, with whole-burn cross-validation.' : 'Laminar smoke-point luminous length from the published SPICE fuel / burner / airflow relation.'}</p><div className="ml-target-gate"><span className="ml-target-symbol" aria-hidden="true">✓</span><div><b>{track.id === 'extinction' ? 'Source labels · not extinction probability' : track.id === 'spread' ? 'Measured spread rate · mm/s' : 'Smoke-point length · mm'}</b><small>Method and evidence limits are displayed with each batch output.</small></div></div></div>
     </header>
-    <VirtualExperimentPanel trackId={track.id} />
-    <section className="ml-section ml-evidence-section" aria-labelledby="ml-evidence-title">
-      <div className="ml-section-heading"><div><span className="ml-eyebrow">01 / INCLUDED & EXCLUDED EVIDENCE</span><h2 id="ml-evidence-title">What the local records can support</h2><p>Counts below are calculated from the bundled CSV files; they distinguish table rows from established independent experiments.</p></div><ReportButton track={track} audits={audits} /></div>
-      {track.id === 'extinction' && <ExtinctionBranches audits={audits} active={activeSourceId} onSelect={setActiveSourceId} />}
-      {track.id === 'extinction' ? <div className="ml-extinction-layout"><RecordSummary audit={activeAudit} /><ExtinctionVisualization audit={activeAudit} /></div> : track.id === 'spread' ? <><div className="ml-source-card-grid">{audits.map((audit) => <RecordSummary audit={audit} key={audit.sourceId} />)}</div><SpreadVisualization audits={audits} /></> : <><RecordSummary audit={activeAudit} /><SootVisualization audit={activeAudit} /></>}
-      <div className="ml-source-inclusion"><div><span className="ml-eyebrow">ASSIGNMENT DECISION</span><p>{track.id === 'extinction' ? 'FLEX is the first candidate branch. CFI-G Normal and CFI-G Inverse remain distinct, separate datasets; neither is pooled with FLEX.' : track.id === 'spread' ? 'All three sources are retained for source-specific exploration. No pooled training table is created because target and measurement definitions do not align.' : 'PSI-107 alone is assigned to soot/smoke-point conditions. PSI-102 is kept as a separate smoke/aerosol detection evidence track.'}</p></div><div><span className="ml-eyebrow">OUT OF SCOPE / NOT BUNDLED</span>{track.additionalSources.map((source) => <p className="ml-additional-source" key={source.title}><a href={source.href} target="_blank" rel="noreferrer">{source.title} ↗</a> <span>{source.state}.</span> {source.note}</p>)}</div></div>
-    </section>
-    <FieldDictionary audits={track.id === 'extinction' ? [activeAudit] : audits} />
-    {track.id === 'extinction' && <section className="ml-section ml-branch-inventory" aria-labelledby="ml-branch-inventory-title"><div className="ml-section-heading"><div><span className="ml-eyebrow">BRANCH INVENTORY</span><h2 id="ml-branch-inventory-title">Separate evidence, separate experts</h2><p>Review each CFI-G configuration without blending its outcomes with the droplet branch.</p></div></div><div className="ml-branch-grid">{audits.map((audit) => <button type="button" className={`ml-branch-card ${audit.sourceId.toLowerCase() === activeSourceId ? 'is-selected' : ''}`} key={audit.sourceId} onClick={() => { setActiveSourceId(audit.sourceId.toLowerCase()); document.querySelector('.ml-evidence-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}><span>{audit.sourceId}</span><strong>{audit.title}</strong><small>{audit.nonEmptyRows} non-empty source rows · {audit.exactDuplicateRows} exact repeat rows</small></button>)}</div></section>}
-    <QualityPanel track={track} audits={audits} />
-    <section className="ml-method-strip"><span className="ml-eyebrow">MODEL METHOD</span><p>{track.id === 'extinction' ? 'Seven-neighbor, inverse-distance case retrieval; inputs are scaled by the observed range and labels remain in the original FLEX vocabulary. Performance is leave-one-test-ID-out.' : track.id === 'spread' ? 'Four-neighbor inverse-distance interpolation of NASA BASS-II PMMA observations; evaluation leaves out an entire burn (M test ID) at a time.' : 'Direct evaluation of the published Dotson et al. (2011) smoke-point scaling law using its reported fuel factors and exponents.'}</p></section>
+    <div className="ml-workspace-tabs" role="tablist" aria-label="Track workspace sections">
+      <button type="button" role="tab" aria-selected={workspaceTab === 'experiment'} className={workspaceTab === 'experiment' ? 'is-active' : ''} onClick={() => setWorkspaceTab('experiment')}>
+        Virtual Experiment <span className="mono">RUN</span>
+      </button>
+      <button type="button" role="tab" aria-selected={workspaceTab === 'audit'} className={workspaceTab === 'audit' ? 'is-active' : ''} onClick={() => setWorkspaceTab('audit')}>
+        Source Audit & Charts <span className="mono">{audits.length}</span>
+      </button>
+      <button type="button" role="tab" aria-selected={workspaceTab === 'contract'} className={workspaceTab === 'contract' ? 'is-active' : ''} onClick={() => setWorkspaceTab('contract')}>
+        Field Contract & Limits <span className="mono">{fieldCount}</span>
+      </button>
+    </div>
+
+    <div hidden={workspaceTab !== 'experiment'}>
+      <VirtualExperimentPanel trackId={track.id} />
+      <section className="ml-method-strip"><span className="ml-eyebrow">MODEL METHOD</span><p>{track.id === 'extinction' ? 'Seven-neighbor, inverse-distance case retrieval; inputs are scaled by the observed range and labels remain in the original FLEX vocabulary. Performance is leave-one-test-ID-out.' : track.id === 'spread' ? 'Four-neighbor inverse-distance interpolation of NASA BASS-II PMMA observations; evaluation leaves out an entire burn (M test ID) at a time.' : 'Direct evaluation of the published Dotson et al. (2011) smoke-point scaling law using its reported fuel factors and exponents.'}</p></section>
+    </div>
+
+    <div hidden={workspaceTab !== 'audit'}>
+      <section className="ml-section ml-evidence-section" aria-labelledby="ml-evidence-title">
+        <div className="ml-section-heading"><div><span className="ml-eyebrow">01 / INCLUDED & EXCLUDED EVIDENCE</span><h2 id="ml-evidence-title">What the local records can support</h2><p>Counts below are calculated from the bundled CSV files; they distinguish table rows from established independent experiments.</p></div><ReportButton track={track} audits={audits} /></div>
+        {track.id === 'extinction' && <ExtinctionBranches audits={audits} active={activeSourceId} onSelect={setActiveSourceId} />}
+        {track.id === 'extinction' ? <div className="ml-extinction-layout"><RecordSummary audit={activeAudit} /><ExtinctionVisualization audit={activeAudit} /></div> : track.id === 'spread' ? <><div className="ml-source-card-grid">{audits.map((audit) => <RecordSummary audit={audit} key={audit.sourceId} />)}</div><SpreadVisualization audits={audits} /></> : <><RecordSummary audit={activeAudit} /><SootVisualization audit={activeAudit} /></>}
+        <div className="ml-source-inclusion"><div><span className="ml-eyebrow">ASSIGNMENT DECISION</span><p>{track.id === 'extinction' ? 'FLEX is the first candidate branch. CFI-G Normal and CFI-G Inverse remain distinct, separate datasets; neither is pooled with FLEX.' : track.id === 'spread' ? 'All three sources are retained for source-specific exploration. No pooled training table is created because target and measurement definitions do not align.' : 'PSI-107 alone is assigned to soot/smoke-point conditions. PSI-102 is kept as a separate smoke/aerosol detection evidence track.'}</p></div><div><span className="ml-eyebrow">OUT OF SCOPE / NOT BUNDLED</span>{track.additionalSources.map((source) => <p className="ml-additional-source" key={source.title}><a href={source.href} target="_blank" rel="noreferrer">{source.title} ↗</a> <span>{source.state}.</span> {source.note}</p>)}</div></div>
+      </section>
+      {track.id === 'extinction' && <section className="ml-section ml-branch-inventory" aria-labelledby="ml-branch-inventory-title"><div className="ml-section-heading"><div><span className="ml-eyebrow">BRANCH INVENTORY</span><h2 id="ml-branch-inventory-title">Separate evidence, separate experts</h2><p>Review each CFI-G configuration without blending its outcomes with the droplet branch.</p></div></div><div className="ml-branch-grid">{audits.map((audit) => <button type="button" className={`ml-branch-card ${audit.sourceId.toLowerCase() === activeSourceId ? 'is-selected' : ''}`} key={audit.sourceId} onClick={() => { setActiveSourceId(audit.sourceId.toLowerCase()); document.querySelector('.ml-evidence-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}><span>{audit.sourceId}</span><strong>{audit.title}</strong><small>{audit.nonEmptyRows} non-empty source rows · {audit.exactDuplicateRows} exact repeat rows</small></button>)}</div></section>}
+    </div>
+
+    <div hidden={workspaceTab !== 'contract'}>
+      <FieldDictionary audits={track.id === 'extinction' ? [activeAudit] : audits} />
+      <QualityPanel track={track} audits={audits} />
+    </div>
     <footer className="ml-page-foot"><span>FlameLens / research audit interface</span><span>Not certified for spacecraft operations · no fire-response authority</span></footer>
   </>;
 }
 
+function TrackSchematic({ id }: { id: ModelTrackId }) {
+  if (id === 'extinction') {
+    return <svg className="ml-hub-schematic" viewBox="0 0 260 58" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <line x1="12" y1="29" x2="248" y2="29" stroke="rgba(169,181,197,0.18)" strokeDasharray="3 4"/>
+      <circle cx="62" cy="29" r="20" fill="rgba(102,217,242,0.08)" stroke="#66d9f2" strokeWidth="1.2"/>
+      <circle cx="62" cy="29" r="11" fill="rgba(243,182,90,0.18)" stroke="#f3b65a" strokeWidth="1.3"/>
+      <circle cx="62" cy="29" r="4" fill="#f3f6fa"/>
+      <text x="98" y="25" fill="#cbd5e1" fontSize="9.5" fontFamily="monospace">HOT → COOL DUAL REGIME</text>
+      <text x="98" y="39" fill="#76c7a3" fontSize="9" fontFamily="monospace">O₂ / CO₂ / N₂ diluent</text>
+    </svg>;
+  }
+  if (id === 'spread') {
+    return <svg className="ml-hub-schematic" viewBox="0 0 260 58" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <rect x="16" y="38" width="228" height="8" rx="3" fill="rgba(169,181,197,0.18)"/>
+      <path d="M22 38 C48 38 62 20 82 16 C100 20 116 35 150 38" fill="rgba(243,182,90,0.2)" stroke="#f3b65a" strokeWidth="1.6"/>
+      <path d="M160 24 L228 24" stroke="#66d9f2" strokeWidth="1.4" strokeDasharray="4 3"/>
+      <polygon points="228,24 221,20 221,28" fill="#66d9f2"/>
+      <text x="158" y="16" fill="#66d9f2" fontSize="9" fontFamily="monospace">Vf(mm/s) →</text>
+    </svg>;
+  }
+  return <svg className="ml-hub-schematic" viewBox="0 0 260 58" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <line x1="12" y1="18" x2="248" y2="18" stroke="rgba(230,106,82,0.45)" strokeDasharray="4 4"/>
+    <path d="M46 50 Q58 22 64 11 Q70 22 82 50 Z" fill="rgba(243,182,90,0.22)" stroke="#f3b65a" strokeWidth="1.3"/>
+    <path d="M56 18 L64 7 L72 18" fill="none" stroke="#e66a52" strokeWidth="1.3"/>
+    <text x="102" y="14" fill="#e66a52" fontSize="9" fontFamily="monospace">SMOKE-POINT THRESHOLD</text>
+    <text x="102" y="35" fill="#cbd5e1" fontSize="9.5" fontFamily="monospace">L_f / SPICE relation</text>
+  </svg>;
+}
+
 function ModelHub({ auditsById }: { auditsById: Record<string, DatasetAudit> }) {
   return <>
-    <header className="ml-hub-hero"><div><span className="ml-eyebrow">FLAMELENS / MODEL LAB</span><h1>Explore the physics <em>with evidence.</em></h1><p>Choose a research track, set conditions, and run a local batch simulation using measured NASA records or a published combustion correlation.</p><div className="ml-hub-summary"><span><b>03</b><small>EXPERIMENT ENGINES</small></span><i /><span><b>02</b><small>NASA MEASUREMENT SOURCES</small></span><i /><span><b>01</b><small>PUBLISHED SPICE CORRELATION</small></span></div></div><ResearchMotionPlate /></header>
-    <section className="ml-hub-grid" aria-label="Scientific model workspaces">{TRACK_ORDER.map((id) => { const track = MODEL_TRACKS[id]; const audits = track.sourceIds.map((sourceId) => auditsById[sourceId]).filter(Boolean); const status = deriveTrackStatus(track, audits, artifactCount(track.id)); const method = id === 'extinction' ? 'Case-based label retrieval · FLEX' : id === 'spread' ? 'Grouped empirical interpolation · BASS-II' : 'Published smoke-point relation · SPICE'; return <Link className={`ml-hub-card ml-hub-${id}`} to={`/models/${id}`} key={id}><div className="ml-hub-card-top"><span>{track.number} / RESEARCH TRACK</span><StatusTag tone="safe">Ready to explore</StatusTag></div><h2>{track.title}</h2><p>{track.objective}</p><div className="ml-hub-card-meta"><span>{audits.length} indexed source tables</span><span>{formatCount(status.rowCount)} local rows audited</span><span>{method}</span></div><div className="ml-hub-card-link">Open experiment workspace <b aria-hidden="true">↗</b></div></Link>; })}</section>
+    <header className="ml-hub-hero"><div className="ml-hub-hero-top"><div className="ml-hub-hero-copy"><span className="ml-eyebrow">FLAMELENS / MODEL LAB</span><h1>Explore the physics <em>with evidence.</em></h1><p>Choose a research track, set conditions, and run a local batch simulation using measured NASA records or a published combustion correlation.</p></div><div className="ml-hub-summary"><span><b>03</b><small>EXPERIMENT ENGINES</small></span><i /><span><b>02</b><small>NASA MEASUREMENT SOURCES</small></span><i /><span><b>01</b><small>PUBLISHED SPICE CORRELATION</small></span></div></div><ResearchMotionPlate /></header>
+    <section className="ml-hub-grid" aria-label="Scientific model workspaces">{TRACK_ORDER.map((id) => { const track = MODEL_TRACKS[id]; const audits = track.sourceIds.map((sourceId) => auditsById[sourceId]).filter(Boolean); const status = deriveTrackStatus(track, audits, artifactCount(track.id)); const method = id === 'extinction' ? 'Case-based label retrieval · FLEX' : id === 'spread' ? 'Grouped empirical interpolation · BASS-II' : 'Published smoke-point relation · SPICE'; return <Link className={`ml-hub-card ml-hub-${id}`} to={`/models/${id}`} key={id}><div className="ml-hub-card-top"><span>{track.number} / RESEARCH TRACK</span><StatusTag tone="safe">Ready to explore</StatusTag></div><h2>{track.title}</h2><TrackSchematic id={id}/><p>{track.objective}</p><div className="ml-hub-card-meta"><span>{audits.length} indexed source tables</span><span>{formatCount(status.rowCount)} local rows audited</span><span>{method}</span></div><div className="ml-hub-card-link">Open experiment workspace <b aria-hidden="true">↗</b></div></Link>; })}</section>
     <section className="ml-hub-integrity"><span className="ml-eyebrow">HOW TO READ RESULTS</span><p>Virtual experiments calculate estimates from observed records and published relationships. They are research aids, not hardware tests or operational fire-safety predictions. Each result shows the source count, grouped evaluation where applicable, model method, and domain limits.</p></section>
   </>;
 }

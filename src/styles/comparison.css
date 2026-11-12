@@ -225,3 +225,422 @@ body:has(.comparison-lab) .app-breadcrumbs { display: none; }
   .comparison-lab * { scroll-behavior: auto !important; transition: none !important; }
   .lab-flex-phase, .lab-flex-flame-ring, .lab-flex-cool-ring, .lab-flex-spark, .lab-flex-oxygen { animation: none !important; }
 }
+
+/* ---------- View Tabs & Progressive Disclosure ---------- */
+.comparison-lab [hidden] { display: none !important; }
+
+.lab-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 6px;
+  border: 1px solid var(--lab-line);
+  background: rgba(6, 10, 16, 0.92);
+}
+
+.lab-view-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 13px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--lab-muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.lab-view-tabs button:hover {
+  color: #e8edf0;
+  background: rgba(178, 217, 224, 0.05);
+}
+
+.lab-view-tabs button.is-active {
+  border-color: rgba(158, 219, 237, 0.45);
+  background: rgba(102, 217, 242, 0.1);
+  color: #e8f4f6;
+}
+
+.lab-view-tabs button span {
+  padding: 1px 6px;
+  border: 1px solid var(--lab-line);
+  border-radius: 999px;
+  color: #9edbed;
+  font-size: 9px;
+}
+
+.lab-caveats-details {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(180, 198, 208, 0.1);
+}
+
+.lab-caveats-details summary {
+  color: #a9cbd3;
+  font: 9px var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.lab-coverage-details {
+  margin-top: 10px;
+}
+
+.lab-coverage-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.lab-coverage-summary::-webkit-details-marker {
+  display: none;
+}
+
+.lab-coverage-summary h2 {
+  margin-top: 4px;
+  color: #e0e8e9;
+  font: 500 16px var(--font-display);
+}
+
+.lab-coverage-summary > span {
+  color: #9edbed;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.lab-coverage-details[open] .lab-coverage-summary {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--lab-line);
+}
+
+/* === Unified Design System, Card Layout & Readability Polish === */
+.comparison-lab .lab-eyebrow {
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+}
+
+.comparison-lab .lab-section,
+.comparison-lab .lab-research-band {
+  border-radius: var(--radius-md);
+  border-color: var(--border-card);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-card), var(--inset-highlight);
+  padding: 24px;
+}
+
+.comparison-lab .lab-section-intro,
+.comparison-lab .lab-transform-note,
+.comparison-lab .lab-compatibility {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-300);
+}
+
+.comparison-lab .lab-fire-evidence {
+  background: var(--surface-1);
+  border-color: var(--border-card);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.comparison-lab .lab-fire-evidence figcaption {
+  font-size: 12.5px;
+  padding: 12px 14px;
+  color: var(--text-300);
+}
+
+.comparison-lab .lab-fire-evidence figcaption .lab-eyebrow,
+.comparison-lab .lab-fire-evidence figcaption a {
+  font-size: 11.5px;
+}
+
+.comparison-lab .lab-view-tabs {
+  gap: 10px;
+}
+
+.comparison-lab .lab-view-tabs button {
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 13.5px;
+}
+
+.comparison-lab .lab-presets {
+  gap: 10px;
+}
+
+.comparison-lab .lab-presets button,
+.comparison-lab .lab-text-button {
+  padding: 9px 13px;
+  border-radius: var(--radius-sm);
+  border-color: var(--border-card);
+  background: var(--surface-inset);
+  color: var(--text-100);
+  font-size: 12.5px;
+  transition: border-color var(--dur-ui) var(--ease-out), background var(--dur-ui) var(--ease-out), transform var(--dur-ui) var(--ease-out);
+}
+
+.comparison-lab .lab-presets button:hover,
+.comparison-lab .lab-text-button:hover {
+  border-color: var(--border-card-hover);
+  background: rgba(102, 217, 242, 0.1);
+}
+
+.comparison-lab .lab-select-row {
+  gap: 16px;
+}
+
+.comparison-lab .lab-select-card {
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border-color: var(--border-card);
+  background: var(--surface-2);
+  box-shadow: var(--inset-highlight);
+}
+
+.comparison-lab .lab-select-card select,
+.comparison-lab .lab-variable-select select {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border-color: var(--border-card);
+  background: var(--surface-1);
+  color: var(--text-100);
+  font-size: 13.5px;
+}
+
+.comparison-lab .lab-select-card small {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-400);
+}
+
+.comparison-lab .lab-add-source {
+  min-height: 54px;
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  color: var(--text-300);
+}
+
+.comparison-lab .lab-chart-card {
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  border-color: var(--border-card);
+  background: var(--surface-1);
+}
+
+.comparison-lab .lab-chart-head p,
+.comparison-lab .lab-toggle {
+  font-size: 12.5px;
+  color: var(--text-300);
+}
+
+.comparison-lab .lab-row-range {
+  font-size: 11px;
+  fill: var(--text-300);
+}
+
+.comparison-lab .lab-empty-chart,
+.comparison-lab .lab-not-comparable,
+.comparison-lab .lab-load-error {
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  font-size: 13.5px;
+  color: var(--text-300);
+}
+
+.comparison-lab .lab-series-grid {
+  gap: 16px;
+}
+
+.comparison-lab .lab-series-card {
+  padding: 18px;
+  border-radius: var(--radius-md);
+  border-color: var(--border-card);
+  background: var(--surface-2);
+  box-shadow: var(--inset-highlight);
+}
+
+.comparison-lab .lab-series-card > p {
+  font-size: 12.5px;
+  color: var(--text-300);
+}
+
+.comparison-lab .lab-series-card dt {
+  font-size: 11.5px;
+}
+
+.comparison-lab .lab-series-card dd {
+  font-size: 13.5px;
+  color: var(--text-100);
+  font-weight: 500;
+}
+
+/* Proportional completeness bar inside series cards */
+.lab-series-meter {
+  margin: 10px 0 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.lab-series-meter-bar {
+  display: flex;
+  height: 7px;
+  width: 100%;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(169, 181, 197, 0.14);
+}
+
+.lab-series-seg-num {
+  background: var(--safe-400);
+}
+
+.lab-series-seg-miss {
+  background: rgba(169, 181, 197, 0.34);
+}
+
+.lab-series-seg-non {
+  background: var(--amber-400);
+}
+
+.lab-series-meter-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-400);
+}
+
+.comparison-lab .lab-method {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border-color: var(--border-card);
+  background: var(--surface-inset);
+  font-size: 13px;
+  color: var(--text-300);
+}
+
+.comparison-lab .lab-method summary {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-100);
+}
+
+.comparison-lab .lab-table-scroll table {
+  font-size: 12.5px;
+}
+
+.comparison-lab .lab-context-scroll {
+  border-radius: var(--radius-sm);
+  border-color: var(--border-card);
+}
+
+.comparison-lab .lab-context-table th,
+.comparison-lab .lab-context-table td {
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-300);
+}
+
+.comparison-lab .lab-context-table thead th > a {
+  font-size: 12px;
+}
+
+.lab-context-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.lab-diff-row th,
+.lab-diff-row td {
+  background: rgba(102, 217, 242, 0.045);
+}
+
+.comparison-lab .lab-eligibility .lab-section-heading > a {
+  font-size: 12.5px;
+}
+
+.comparison-lab .lab-eligibility-list {
+  gap: 16px;
+}
+
+.comparison-lab .lab-eligibility-list article {
+  padding: 18px;
+  border-radius: var(--radius-md);
+  border-color: var(--border-card);
+  background: var(--surface-2);
+}
+
+.comparison-lab .lab-eligibility-list p,
+.comparison-lab .lab-eligibility-list small {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-300);
+}
+
+.comparison-lab .lab-research-grid,
+.comparison-lab .lab-atlas-grid,
+.comparison-lab .lab-source-grid {
+  gap: 16px;
+}
+
+.comparison-lab .lab-research-card,
+.comparison-lab .lab-atlas-card,
+.comparison-lab .lab-source-chip {
+  padding: 18px;
+  border-radius: var(--radius-md);
+  border-color: var(--border-card);
+  background: var(--surface-2);
+  transition: border-color var(--dur-ui) var(--ease-out), transform var(--dur-ui) var(--ease-out);
+}
+
+.comparison-lab .lab-research-card:hover,
+.comparison-lab .lab-source-chip:hover {
+  border-color: var(--border-card-hover);
+  transform: translateY(-2px);
+}
+
+.comparison-lab .lab-research-card p {
+  margin-top: 8px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-300);
+}
+
+.comparison-lab .lab-research-card > a,
+.comparison-lab .lab-source-chip > span:last-of-type,
+.comparison-lab .lab-source-chip > b,
+.comparison-lab .lab-atlas-source {
+  font-size: 12px;
+}
+
+.comparison-lab .lab-atlas-card > button .lab-eyebrow {
+  font-size: 11px;
+}
+
+.comparison-lab .lab-atlas-detail > div p {
+  font-size: 13px;
+  color: var(--text-300);
+}
+
+.comparison-lab .lab-atlas-detail .lab-text-button {
+  font-size: 12px;
+  padding: 7px 11px;
+}
+
+.comparison-lab .lab-footer {
+  font-size: 11.5px;
+  color: var(--text-400);
+  padding: 16px 4px;
+}

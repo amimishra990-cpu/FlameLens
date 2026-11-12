@@ -24,6 +24,73 @@ function RunCount({ value, onChange }: { value: number; onChange: (value: number
   return <label>Experiment count<select value={value} onChange={(event) => onChange(Number(event.target.value))}>{[10, 25, 50, 100].map((count) => <option key={count} value={count}>{count} virtual cases</option>)}</select></label>;
 }
 
+const SEGMENT_COLORS = ['#66d9f2', '#f3b65a', '#76c7a3', '#e66a52', '#c4b6e8'];
+
+function BatchCurvePlot({
+  points,
+  xLabel,
+  yLabel,
+  xUnit,
+  yUnit,
+  accent,
+}: {
+  points: { x: number; y: number; tip: string }[];
+  xLabel: string;
+  yLabel: string;
+  xUnit: string;
+  yUnit: string;
+  accent: string;
+}) {
+  if (!points.length) return null;
+  const sorted = [...points].sort((a, b) => a.x - b.x);
+  const minX = Math.min(...sorted.map((p) => p.x));
+  const maxX = Math.max(...sorted.map((p) => p.x));
+  const minY = Math.min(...sorted.map((p) => p.y));
+  const maxY = Math.max(...sorted.map((p) => p.y));
+  const spanX = maxX - minX || 1;
+  const spanY = maxY - minY || 1;
+  const w = 520, h = 156, padL = 48, padR = 16, padT = 16, padB = 28;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+  const coords = sorted.map((p) => ({
+    cx: padL + ((p.x - minX) / spanX) * plotW,
+    cy: padT + plotH - ((p.y - minY) / spanY) * plotH,
+    tip: p.tip,
+  }));
+  const poly = coords.map((c) => `${c.cx.toFixed(1)},${c.cy.toFixed(1)}`).join(' ');
+  return (
+    <div className="ml-exp-plot-wrap">
+      <div className="ml-exp-plot-head">
+        <span>{yLabel} ({yUnit}) vs. {xLabel} ({xUnit})</span>
+        <span>{sorted.length} sampled points</span>
+      </div>
+      <svg className="ml-exp-plot" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`${yLabel} versus ${xLabel} chart`}>
+        {[0, 0.5, 1].map((t) => {
+          const y = padT + plotH - t * plotH;
+          const val = minY + t * spanY;
+          return (
+            <g key={t}>
+              <line x1={padL} y1={y} x2={w - padR} y2={y} className="ml-plot-grid" />
+              <text x={padL - 6} y={y + 3} textAnchor="end" className="ml-plot-tick">{val.toFixed(yUnit === 'mm/s' ? 2 : 1)}</text>
+            </g>
+          );
+        })}
+        {[0, 0.5, 1].map((t) => {
+          const x = padL + t * plotW;
+          const val = minX + t * spanX;
+          return <text key={t} x={x} y={h - 8} textAnchor="middle" className="ml-plot-tick">{val.toFixed(1)} {xUnit}</text>;
+        })}
+        <polyline fill="none" stroke={accent} strokeWidth="1.6" strokeOpacity="0.65" points={poly} />
+        {coords.map((c, i) => (
+          <circle key={i} cx={c.cx} cy={c.cy} r="3.4" fill={accent} stroke="#070b14" strokeWidth="1">
+            <title>{c.tip}</title>
+          </circle>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 export function VirtualExperimentPanel({ trackId, autoRunInitial = true, onBatchComplete, onBatchReset }: VirtualExperimentPanelProps) {
   const [count, setCount] = useState(25);
   const [fuel, setFuel] = useState('Methanol');
@@ -98,7 +165,13 @@ export function VirtualExperimentPanel({ trackId, autoRunInitial = true, onBatch
           <label>Droplet diameter · max (mm)<input type="number" value={diameterMax} min="1.1" max="4.67" step="0.1" onChange={(event) => setDiameterMax(Number(event.target.value))} /></label>
         </> : trackId === 'spread' ? <>
           <label>Material<select value="PMMA · BASS-II" disabled><option>PMMA · BASS-II</option></select></label>
-          <label>Thickness (mm)<input type="number" value={thickness} min="1" max="5" step="0.5" onChange={(event) => setThickness(Number(event.target.value))} /></label>
+          <label className="ml-exp-range-label">
+            <span>Thickness (mm) · <b>{thickness}</b></span>
+            <div className="ml-exp-range-row">
+              <input type="range" value={thickness} min="1" max="5" step="0.5" aria-label="Thickness slider" onChange={(event) => setThickness(Number(event.target.value))} />
+              <input type="number" value={thickness} min="1" max="5" step="0.5" onChange={(event) => setThickness(Number(event.target.value))} />
+            </div>
+          </label>
           <label>Sample width (cm)<select value={width} onChange={(event) => setWidth(Number(event.target.value))}><option value="1.2">1.2</option><option value="2.2">2.2</option></select></label>
           <label>Burning sides<select value={sides} onChange={(event) => setSides(Number(event.target.value) as 1 | 2)}><option value="1">One side</option><option value="2">Two sides</option></select></label>
           <label>Opposed airflow · min (cm/s)<input type="number" value={flowMin} min="2" max="21" step="0.1" onChange={(event) => setFlowMin(Number(event.target.value))} /></label>
@@ -118,19 +191,44 @@ export function VirtualExperimentPanel({ trackId, autoRunInitial = true, onBatch
           <div className="ml-exp-metrics"><Metric label="Source observations" value={result.trainingRows.toLocaleString()} note="Complete FLEX rows"/><Metric label="FLEX test IDs" value={String(result.evaluation.groups)} note="In complete-case rows"/><Metric label="Dataset accuracy" value={`${((result.evaluation.accuracy ?? 0) * 100).toFixed(1)}%`} note="Leave one test ID out"/><Metric label="Macro F1" value={(result.evaluation.macroF1 ?? 0).toFixed(3)} note="Same grouped folds"/></div>
           <p className="ml-exp-caveat">The accuracy and F1 are fixed dataset-level diagnostics for this method, so they stay the same across parameter batches. The label distribution and case table below respond to your selected conditions. FLEX test IDs are candidate groups; independence still needs source confirmation.</p>
           <p className="ml-exp-caveat">Outputs are neighbor-weighted shares of the literal <code>Test end</code> labels. They do not mean extinction probability; the source event semantics are not verified.</p>
-          <div className="ml-exp-bars">{result.labelSummary.map((item) => <div key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.share * 100}%` }}/></i><strong>{item.count}</strong></div>)}</div>
-          <div className="ml-exp-table-wrap"><table className="ml-exp-table"><thead><tr><th>Case</th><th>Pressure</th><th>O₂</th><th>Droplet</th><th>Estimated source label</th><th>Nearest FLEX tests</th></tr></thead><tbody>{result.experiments.slice(0, 8).map((item, i) => <tr key={i}><td>{String(i + 1).padStart(2, '0')}</td><td>{item.pressure.toFixed(0)} mmHg</td><td>{item.oxygen.toFixed(3)}</td><td>{item.diameter.toFixed(2)} mm</td><td>{item.estimatedLabel}</td><td>{item.neighborIds.join(', ')}</td></tr>)}</tbody></table></div>
+          <div className="ml-exp-bars">{result.labelSummary.map((item, idx) => <div key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.share * 100}%`, background: SEGMENT_COLORS[idx % SEGMENT_COLORS.length] }}/></i><strong>{item.count}</strong></div>)}</div>
+          <details className="ml-exp-table-details">
+            <summary>Inspect sampled cases ({Math.min(8, result.experiments.length)} rows) ▾</summary>
+            <div className="ml-exp-table-wrap"><table className="ml-exp-table"><thead><tr><th>Case</th><th>Pressure</th><th>O₂</th><th>Droplet</th><th>Estimated source label</th><th>Nearest FLEX tests</th></tr></thead><tbody>{result.experiments.slice(0, 8).map((item, i) => <tr key={i}><td>{String(i + 1).padStart(2, '0')}</td><td>{item.pressure.toFixed(0)} mmHg</td><td>{item.oxygen.toFixed(3)}</td><td>{item.diameter.toFixed(2)} mm</td><td>{item.estimatedLabel}</td><td>{item.neighborIds.join(', ')}</td></tr>)}</tbody></table></div>
+          </details>
         </> : trackId === 'spread' && 'testGroups' in result ? <>
           <div className="ml-exp-result-title"><span>EMPIRICAL NEIGHBOR MODEL · NASA BASS-II</span><b>{result.experiments.length} airflow cases</b></div>
           <div className="ml-exp-metrics"><Metric label="Measured conditions" value={String(result.trainingRows)} note="NASA Table 5.1"/><Metric label="Physical burns" value={String(result.testGroups)} note="M1–M20, numeric outcomes"/><Metric label="Grouped MAE" value={`${(result.evaluation.mae ?? 0).toFixed(3)} mm/s`} note="Leave one burn out"/><Metric label="Grouped RMSE" value={`${(result.evaluation.rmse ?? 0).toFixed(3)} mm/s`} note="Leave one burn out"/></div>
+          <BatchCurvePlot
+            points={result.experiments.map((item) => ({ x: item.flow, y: item.estimatedSpreadRate, tip: `${item.flow.toFixed(1)} cm/s → ${item.estimatedSpreadRate.toFixed(3)} mm/s` }))}
+            xLabel="Opposed flow"
+            yLabel="Spread rate"
+            xUnit="cm/s"
+            yUnit="mm/s"
+            accent="#f3b65a"
+          />
           <p className="ml-exp-caveat">Nearest-neighbor estimates are empirical interpolation over the NASA PMMA points. Oxygen is contextual in the report and excluded because its start/end values are test-level, not flow-row measurements.</p>
-          <div className="ml-exp-bars ml-rate-bars">{result.experiments.slice(0, 12).map((item, i) => <div key={i}><span>{item.flow.toFixed(1)} cm/s</span><i><b style={{ width: `${Math.min(100, item.estimatedSpreadRate / 1.5 * 100)}%` }}/></i><strong>{item.estimatedSpreadRate.toFixed(3)} mm/s</strong></div>)}</div>
+          <details className="ml-exp-table-details">
+            <summary>View sampled bar breakdown ({Math.min(12, result.experiments.length)} airflow cases) ▾</summary>
+            <div className="ml-exp-bars ml-rate-bars">{result.experiments.slice(0, 12).map((item, i) => <div key={i}><span>{item.flow.toFixed(1)} cm/s</span><i><b style={{ width: `${Math.min(100, item.estimatedSpreadRate / 1.5 * 100)}%` }}/></i><strong>{item.estimatedSpreadRate.toFixed(3)} mm/s</strong></div>)}</div>
+          </details>
           <p className="ml-exp-note">Predictions are tagged to nearest NASA burns: {result.experiments[0]?.nearestTestIds.join(', ')}. A displayed 100 mm traversal time is a simple distance ÷ rate calculation, not a NASA-reported result.</p>
         </> : trackId === 'soot-smoke' && 'source' in result ? <>
           <div className="ml-exp-result-title"><span>PUBLISHED PHYSICS CORRELATION · SPICE</span><b>{result.experiments.length} coflow conditions</b></div>
           <div className="ml-exp-metrics"><Metric label="Published smoke points" value="55" note="Dotson et al. (2011)"/><Metric label="Reported fit R²" value="0.90" note="In-sample correlation fit"/><Metric label="Mean smoke-point length" value={`${result.averageLength.toFixed(1)} mm`} note={`${result.fuelLabel} · ${burnerDiameter} mm burner`}/><Metric label="Coflow range" value={`${Math.min(...result.experiments.map((item) => item.flow)).toFixed(1)}–${Math.max(...result.experiments.map((item) => item.flow)).toFixed(1)} cm/s`} note="Sampled within paper domain"/></div>
+          <BatchCurvePlot
+            points={result.experiments.map((item) => ({ x: item.flow, y: item.estimatedSmokePointLength, tip: `${item.flow.toFixed(1)} cm/s → ${item.estimatedSmokePointLength.toFixed(1)} mm` }))}
+            xLabel="Coflow velocity"
+            yLabel="Smoke-point length"
+            xUnit="cm/s"
+            yUnit="mm"
+            accent="#66d9f2"
+          />
           <p className="ml-exp-formula">L<sub>SP</sub> = A<sub>f</sub> × d<sup>−0.910</sup> × u<sub>air</sub><sup>0.414</sup> · source-reported luminous length uncertainty ±5%; air velocity ±10%.</p>
-          <div className="ml-exp-bars ml-rate-bars">{result.experiments.slice(0, 12).map((item, i) => <div key={i}><span>{item.flow.toFixed(1)} cm/s</span><i><b style={{ width: `${Math.min(100, item.estimatedSmokePointLength / 80 * 100)}%` }}/></i><strong>{item.estimatedSmokePointLength.toFixed(1)} mm</strong></div>)}</div>
+          <details className="ml-exp-table-details">
+            <summary>View sampled bar breakdown ({Math.min(12, result.experiments.length)} coflow cases) ▾</summary>
+            <div className="ml-exp-bars ml-rate-bars">{result.experiments.slice(0, 12).map((item, i) => <div key={i}><span>{item.flow.toFixed(1)} cm/s</span><i><b style={{ width: `${Math.min(100, item.estimatedSmokePointLength / 80 * 100)}%` }}/></i><strong>{item.estimatedSmokePointLength.toFixed(1)} mm</strong></div>)}</div>
+          </details>
           <a className="ml-exp-source-link" href={result.source.pdf} target="_blank" rel="noreferrer">Open the published SPICE paper ↗</a>
           <p className="ml-exp-caveat">This predicts luminous smoke-point length only; it is not a soot fraction, smoke mass, or detector response. The paper says the correlation does not apply to quiescent ambient air.</p>
         </> : null}

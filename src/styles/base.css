@@ -374,3 +374,39 @@ canvas {
     gap: 3px;
   }
 }
+
+/* ---------- Unified Design System Comfort & Accessibility Polish ---------- */
+:where(a, button, summary, input, select, textarea):focus-visible {
+  outline: 2px solid var(--ice-400);
+  outline-offset: 2px;
+}
+
+summary {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(102, 217, 242, 0.28);
+  color: var(--text-100);
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(7, 11, 20, 0.65);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(169, 181, 197, 0.25);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 217, 242, 0.45);
+  background-clip: content-box;
+}

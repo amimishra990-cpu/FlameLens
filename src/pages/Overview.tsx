@@ -1,8 +1,78 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { OrbitalMark } from '../components/OrbitalMark';
 import { INVESTIGATIONS, getInvestigation, type Investigation } from '../data/investigations';
 import { OverviewStarfield } from '../components/OverviewStarfield';
-import { MetricCard, InteractiveCard } from '../components/MetricCard';
+import { MetricCard, InteractiveCard, StatRing } from '../components/MetricCard';
+
+type OverviewIconKind =
+  | 'catalogue'
+  | 'rows'
+  | 'gauge'
+  | 'alert'
+  | 'extinction'
+  | 'spread'
+  | 'soot'
+  | 'detection'
+  | 'explorer'
+  | 'compare'
+  | 'models'
+  | 'deck'
+  | 'copilot';
+
+function OverviewGlyph({ kind, size = 18 }: { kind: OverviewIconKind; size?: number }) {
+  const paths: Record<OverviewIconKind, ReactNode> = {
+    catalogue: <><rect x="3" y="4" width="18" height="4" rx="1" /><rect x="3" y="10" width="18" height="4" rx="1" /><rect x="3" y="16" width="12" height="4" rx="1" /></>,
+    rows: <><path d="M4 6h16M4 12h16M4 18h10" /><circle cx="19" cy="18" r="2" /></>,
+    gauge: <><path d="M4 16a8 8 0 1 1 16 0" /><path d="M12 16l3.5-4.5" /><circle cx="12" cy="16" r="1.5" /></>,
+    alert: <><path d="M12 4 3 19h18L12 4Z" /><path d="M12 10v4M12 16.5h.01" /></>,
+    extinction: <><circle cx="12" cy="12" r="7" strokeDasharray="3 2" /><circle cx="12" cy="12" r="2.5" /></>,
+    spread: <><path d="M4 17h16M6 13c3-4 5-6 12-6" /><path d="m15 5 3 2-3 2" /></>,
+    soot: <><path d="M12 20c3.3 0 6-2.5 6-5.7 0-3.7-3.4-6.7-6-10.3-2.6 3.6-6 6.6-6 10.3 0 3.2 2.7 5.7 6 5.7Z" /></>,
+    detection: <><circle cx="12" cy="12" r="2" /><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2" /></>,
+    explorer: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /><circle cx="11" cy="11" r="2" /></>,
+    compare: <><path d="M4 8h16M4 16h16" /><circle cx="9" cy="8" r="2" /><circle cx="15" cy="16" r="2" /></>,
+    models: <><path d="M4 18V9l5 3 4-6 7 4v8H4Z" /></>,
+    deck: <><circle cx="12" cy="12" r="8" /><path d="M12 12 17 7" /><circle cx="12" cy="12" r="2" /></>,
+    copilot: <><path d="M12 3v4M12 17v4M3 12h4M17 12h4" /><circle cx="12" cy="12" r="3" /></>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[kind]}
+    </svg>
+  );
+}
+
+function ExplorerMiniVisual() {
+  return (
+    <svg className="quick-mini-svg" viewBox="0 0 220 56" aria-hidden="true">
+      <circle cx="34" cy="28" r="18" fill="none" stroke="rgba(102,217,242,.22)" strokeDasharray="3 3" />
+      <circle cx="110" cy="28" r="24" fill="none" stroke="rgba(118,199,163,.18)" />
+      <circle cx="182" cy="28" r="16" fill="none" stroke="rgba(243,182,90,.2)" strokeDasharray="2 3" />
+      <line x1="34" y1="28" x2="110" y2="28" stroke="rgba(156,196,216,.2)" />
+      <line x1="110" y1="28" x2="182" y2="28" stroke="rgba(156,196,216,.2)" />
+      <circle cx="34" cy="28" r="4" fill="#76c7a3" />
+      <circle cx="68" cy="16" r="3" fill="#66d9f2" />
+      <circle cx="110" cy="28" r="5" fill="#66d9f2" />
+      <circle cx="144" cy="40" r="3.5" fill="#e66a52" />
+      <circle cx="182" cy="28" r="4" fill="#f3b65a" />
+      <circle cx="198" cy="15" r="2.5" fill="#a9b5c5" />
+    </svg>
+  );
+}
+
+function CompareMiniVisual() {
+  return (
+    <svg className="quick-mini-svg" viewBox="0 0 220 56" aria-hidden="true">
+      <line x1="20" y1="14" x2="200" y2="14" stroke="rgba(156,196,216,.18)" />
+      <line x1="20" y1="28" x2="200" y2="28" stroke="rgba(156,196,216,.18)" />
+      <line x1="20" y1="42" x2="200" y2="42" stroke="rgba(156,196,216,.18)" />
+      {[42, 68, 86, 120, 148].map((x) => <circle key={`a-${x}`} cx={x} cy="14" r="3" fill="#9edbed" opacity=".88" />)}
+      {[56, 94, 112, 134, 174].map((x) => <circle key={`b-${x}`} cx={x} cy="28" r="3" fill="#e1bd84" opacity=".88" />)}
+      {[36, 78, 132, 166].map((x) => <circle key={`c-${x}`} cx={x} cy="42" r="3" fill="#c4b6e8" opacity=".88" />)}
+    </svg>
+  );
+}
 
 type ModelReadinessStatus = 'training-ready' | 'exploratory' | 'data-audited' | 'in-progress' | 'not-supported';
 
@@ -328,6 +398,9 @@ export function Overview() {
   const warningNotices = qualityNotices.filter(n => n.severity === 'warning').length;
 
   const [expandedNotice, setExpandedNotice] = useState<string | null>(null);
+  const [expandedTrackNotes, setExpandedTrackNotes] = useState<Record<string, boolean>>({});
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const localCoveragePct = totalInvestigations ? Math.round((localCount / totalInvestigations) * 100) : 0;
 
   return (
     <>
@@ -347,6 +420,13 @@ export function Overview() {
               </p>
             </div>
             <div className="overview-hero-visual">
+              <StatRing
+                value={localCoveragePct}
+                label="Local"
+                sublabel={`${localCount}/${totalInvestigations} indexed`}
+                color="ice"
+                size={108}
+              />
               <div className="overview-evidence-summary">
                 <p className="overview-hero-ring-kicker">Evidence status · by work track</p>
                 <div className="overview-evidence-status-grid">
@@ -363,27 +443,27 @@ export function Overview() {
               label="Investigations Catalogued"
               value={totalInvestigations}
               subtext={`${localCount} local · ${registeredCount} registered · ${externalCount} external · ${monitorCount} monitor`}
-              icon={<OrbitalMark size={18} />}
+              icon={<OverviewGlyph kind="catalogue" />}
               trend="neutral"
             />
             <MetricCard
               label="Rows in Local Exports"
               value={localRows.toLocaleString()}
               subtext="Across 7 local investigations · raw CSV row counts"
-              icon={<OrbitalMark size={18} />}
+              icon={<OverviewGlyph kind="rows" />}
             />
             <MetricCard
               label="Training-ready Tracks"
               value={trainingReadyTracks ? `${trainingReadyTracks} ${trainingReadyTracks === 1 ? 'track' : 'tracks'}` : 'None established'}
               subtext={trainingReadyTracks ? 'Marked ready in the current evidence audit' : 'No track is marked ready in this audit'}
-              icon={<OrbitalMark size={18} />}
+              icon={<OverviewGlyph kind="gauge" />}
               trend="neutral"
             />
             <MetricCard
               label="Open Evidence Issues"
               value={criticalNotices + warningNotices}
               subtext={`${criticalNotices} critical · ${warningNotices} warnings`}
-              icon={<OrbitalMark size={18} />}
+              icon={<OverviewGlyph kind="alert" />}
             />
           </div>
         </header>
@@ -391,33 +471,53 @@ export function Overview() {
         {/* Model Readiness Track Grid */}
         <section className="overview-section" aria-labelledby="readiness-heading">
           <header className="overview-section-header">
-            <p className="section-label"><OrbitalMark size={12} /> Model Readiness</p>
+            <p className="section-label"><OverviewGlyph kind="gauge" size={12} /> Model Readiness</p>
             <h2 id="readiness-heading" className="overview-section-title">
               Status by Work Track
             </h2>
           </header>
           <div className="overview-readiness-grid">
             {modelTracks.map((track) => {
+              const noteExpanded = Boolean(expandedTrackNotes[track.id]);
+              const trackIcon: OverviewIconKind =
+                track.id === 'extinction' ? 'extinction' : track.id === 'spread' ? 'spread' : track.id === 'soot' ? 'soot' : 'detection';
               return (
                 <InteractiveCard
                   key={track.id}
                   title={track.label}
-                  description={track.statusNote}
+                  description=""
                   status={getStatusForCard(track.status)}
                   statusLabel={track.statusLabel}
                   metrics={track.keyMetrics}
-                  icon={<OrbitalMark size={22} />}
+                  icon={<OverviewGlyph kind={trackIcon} size={20} />}
                   className={`readiness-card ${track.id}`}
                   trailing={<div className={`readiness-evidence-badge is-${track.status}`}><span>Evidence state</span><strong>{track.statusLabel}</strong></div>}
                 >
+                  <div className="ov-note-wrap">
+                    <p className={`interactive-card-description ov-clamped-note${noteExpanded ? ' is-expanded' : ''}`}>
+                      {track.statusNote}
+                    </p>
+                    <button
+                      type="button"
+                      className="ov-inline-toggle mono"
+                      aria-expanded={noteExpanded}
+                      onClick={() => setExpandedTrackNotes((prev) => ({ ...prev, [track.id]: !noteExpanded }))}
+                    >
+                      {noteExpanded ? 'Hide audit note ▴' : 'Full audit note ▾'}
+                    </button>
+                  </div>
                   <div className="readiness-card-investigations">
                     <p className="section-label mono">Investigations in Track</p>
                     <div className="readiness-inv-chips">
                       {track.investigations.map((inv) => (
-                        <span key={inv.id} className={`chip ${inv.status === 'local' ? 'chip-local' : inv.status === 'registered' ? 'chip-registered' : inv.status === 'external' ? 'chip-external' : 'chip-caution'}`}>
+                        <Link
+                          key={inv.id}
+                          to={`/explorer/${inv.id}`}
+                          className={`chip chip-link ${inv.status === 'local' ? 'chip-local' : inv.status === 'registered' ? 'chip-registered' : inv.status === 'external' ? 'chip-external' : 'chip-caution'}`}
+                        >
                           <span className="dot" aria-hidden="true" />
                           {inv.psiId}
-                        </span>
+                        </Link>
                       ))}
                     </div>
                   </div>
@@ -434,48 +534,68 @@ export function Overview() {
         {/* Investigation Coverage */}
         <section className="overview-section" aria-labelledby="coverage-heading">
           <header className="overview-section-header">
-            <p className="section-label"><OrbitalMark size={12} /> Investigation Coverage</p>
+            <p className="section-label"><OverviewGlyph kind="catalogue" size={12} /> Investigation Coverage</p>
             <h2 id="coverage-heading" className="overview-section-title">
               Datasets by Category
             </h2>
           </header>
           <div className="overview-coverage-grid">
-            {coverage.map((cat) => (
-              <InteractiveCard
-                key={cat.category}
-                title={cat.category}
-                description={`${cat.total} investigations • ${cat.local} local tables • ${cat.localRows} rows`}
-                status={cat.local > 0 ? 'planned' : 'planned'}
-                statusLabel={cat.local > 0 ? 'Data Available' : 'Registered Only'}
-                metrics={[
-                  { label: 'Local', value: String(cat.local) },
-                  { label: 'Registered', value: String(cat.registered) },
-                  { label: 'External', value: String(cat.external) },
-                  { label: 'Monitor', value: String(monitorCount) },
-                ]}
-                icon={<OrbitalMark size={22} />}
-              >
-                <div className="coverage-inv-list">
-                  {cat.investigations.map((inv) => (
-                    <div key={inv.id} className="coverage-inv-row">
-                      <span className="coverage-inv-psi mono">{inv.psiId}</span>
-                      <span className="coverage-inv-name">{inv.name}</span>
-                      <span className={`chip ${inv.status === 'local' ? 'chip-local' : inv.status === 'registered' ? 'chip-registered' : inv.status === 'external' ? 'chip-external' : 'chip-caution'}`}>
-                        <span className="dot" aria-hidden="true" />
-                        {inv.status === 'local' ? 'Local' : inv.status === 'registered' ? 'Registered' : inv.status === 'external' ? 'External' : 'Monitor'}
-                      </span>
+            {coverage.map((cat) => {
+              const isOpen = Boolean(expandedCategories[cat.category]);
+              const denom = Math.max(1, cat.total);
+              return (
+                <InteractiveCard
+                  key={cat.category}
+                  title={cat.category}
+                  description={`${cat.total} investigations • ${cat.local} local tables • ${cat.localRows} rows`}
+                  status={cat.local > 0 ? 'planned' : 'planned'}
+                  statusLabel={cat.local > 0 ? 'Data Available' : 'Registered Only'}
+                  metrics={[
+                    { label: 'Local', value: String(cat.local) },
+                    { label: 'Registered', value: String(cat.registered) },
+                    { label: 'External', value: String(cat.external) },
+                    { label: 'Monitor', value: String(monitorCount) },
+                  ]}
+                  icon={<OverviewGlyph kind="rows" size={20} />}
+                >
+                  <div className="ov-coverage-bar-wrap" aria-label={`${cat.local} local, ${cat.registered} registered, ${cat.external} external, ${cat.monitor} monitor`}>
+                    <div className="ov-coverage-bar">
+                      {cat.local > 0 && <span className="seg-local" style={{ width: `${(cat.local / denom) * 100}%` }} />}
+                      {cat.registered > 0 && <span className="seg-registered" style={{ width: `${(cat.registered / denom) * 100}%` }} />}
+                      {cat.external > 0 && <span className="seg-external" style={{ width: `${(cat.external / denom) * 100}%` }} />}
+                      {cat.monitor > 0 && <span className="seg-monitor" style={{ width: `${(cat.monitor / denom) * 100}%` }} />}
                     </div>
-                  ))}
-                </div>
-              </InteractiveCard>
-            ))}
+                    <button
+                      type="button"
+                      className="ov-inline-toggle mono"
+                      aria-expanded={isOpen}
+                      onClick={() => setExpandedCategories((prev) => ({ ...prev, [cat.category]: !isOpen }))}
+                    >
+                      {isOpen ? `Hide ${cat.investigations.length} sources ▴` : `Inspect ${cat.investigations.length} sources ▾`}
+                    </button>
+                  </div>
+                  <div className={`coverage-inv-list${isOpen ? ' is-open' : ' is-collapsed'}`}>
+                    {cat.investigations.map((inv) => (
+                      <Link key={inv.id} to={`/explorer/${inv.id}`} className="coverage-inv-row">
+                        <span className="coverage-inv-psi mono">{inv.psiId}</span>
+                        <span className="coverage-inv-name">{inv.name}</span>
+                        <span className={`chip ${inv.status === 'local' ? 'chip-local' : inv.status === 'registered' ? 'chip-registered' : inv.status === 'external' ? 'chip-external' : 'chip-caution'}`}>
+                          <span className="dot" aria-hidden="true" />
+                          {inv.status === 'local' ? 'Local' : inv.status === 'registered' ? 'Registered' : inv.status === 'external' ? 'External' : 'Monitor'}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </InteractiveCard>
+              );
+            })}
           </div>
         </section>
 
         {/* Data Quality / Evidence Notices */}
         <section className="overview-section" aria-labelledby="quality-heading">
           <header className="overview-section-header">
-            <p className="section-label"><OrbitalMark size={12} /> Data Quality / Evidence Notices</p>
+            <p className="section-label"><OverviewGlyph kind="alert" size={12} /> Data Quality / Evidence Notices</p>
             <h2 id="quality-heading" className="overview-section-title">
               Known Issues in Current Evidence
             </h2>
@@ -506,10 +626,13 @@ export function Overview() {
                     </div>
                     <div className="quality-notice-title-row">
                       <h3 className="quality-notice-title">{notice.title}</h3>
-                      <span className={`quality-severity ${notice.severity}`}>{notice.severity.toUpperCase()}</span>
+                      <div className="quality-notice-badges">
+                        <span className="quality-count mono">{notice.affectedInvestigations.length} PSI</span>
+                        <span className={`quality-severity ${notice.severity}`}>{notice.severity.toUpperCase()}</span>
+                      </div>
                     </div>
                   </div>
-                  <p className="quality-notice-description">{notice.description}</p>
+                  <p className={`quality-notice-description${isExpanded ? ' is-expanded' : ''}`}>{notice.description}</p>
                   {isExpanded && (
                     <div className="quality-notice-expanded">
                       <p className="section-label mono">Affected Investigations</p>
@@ -548,10 +671,12 @@ export function Overview() {
                   <div className="activity-line" />
                 </div>
                 <div className="activity-content">
-                  <time className="activity-date mono" dateTime={activity.date}>{activity.date}</time>
+                  <div className="activity-meta-row">
+                    <time className="activity-date mono" dateTime={activity.date}>{activity.date}</time>
+                    <p className="activity-source mono">Source: {activity.source}</p>
+                  </div>
                   <h3 className="activity-title">{activity.title}</h3>
                   <p className="activity-description">{activity.description}</p>
-                  <p className="activity-source mono">Source: {activity.source}</p>
                 </div>
               </article>
             ))}
@@ -564,7 +689,7 @@ export function Overview() {
         {/* Quick Access */}
         <section className="overview-section" aria-labelledby="quick-heading">
           <header className="overview-section-header">
-            <p className="section-label"><OrbitalMark size={12} /> Quick Access</p>
+            <p className="section-label"><OverviewGlyph kind="explorer" size={12} /> Quick Access</p>
             <h2 id="quick-heading" className="overview-section-title">
               Routes to Science Tools
             </h2>
@@ -576,14 +701,14 @@ export function Overview() {
               description="Browse, filter, and inspect all catalogued investigations with full audit metadata and source links."
               status="ready"
               statusLabel="Open Explorer"
-              icon={<OrbitalMark size={22} />}
+              icon={<OverviewGlyph kind="explorer" size={20} />}
               actions={[
                 { label: 'Browse investigations', variant: 'primary', to: '/explorer' },
               ]}
             >
               <div className="quick-card-preview">
-                <div className="quick-preview-placeholder">
-                  <OrbitalMark size={28} />
+                <div className="quick-preview-placeholder quick-preview-visual">
+                  <ExplorerMiniVisual />
                   <p>Interactive constellation map with filtering by safety function, status, and evidence quality</p>
                 </div>
               </div>
@@ -595,14 +720,14 @@ export function Overview() {
               description="Side-by-side evidence comparison with verdicts grounded in source data (e.g., FLEX vs SPICE)."
               status="ready"
               statusLabel="Open Comparison Lab"
-              icon={<OrbitalMark size={22} />}
+              icon={<OverviewGlyph kind="compare" size={20} />}
               actions={[
                 { label: 'Open Comparison Lab', variant: 'primary', to: '/comparison' },
               ]}
             >
               <div className="quick-card-preview">
-                <div className="quick-preview-placeholder">
-                  <OrbitalMark size={28} />
+                <div className="quick-preview-placeholder quick-preview-visual">
+                  <CompareMiniVisual />
                   <p>Verdict-driven comparison tables with provenance — never color-only signals</p>
                 </div>
               </div>
@@ -614,7 +739,7 @@ export function Overview() {
               description="Track readiness, frozen targets, grouped validation, and applicability-domain gates for each work track."
               status="progress"
               statusLabel="Extinction Track Active"
-              icon={<OrbitalMark size={22} />}
+              icon={<OverviewGlyph kind="models" size={20} />}
               actions={[
                 { label: 'Open Model Lab', variant: 'primary', to: '/models' },
               ]}
@@ -637,7 +762,7 @@ export function Overview() {
               description="Play three level-by-level science emergencies. Choose the evidence-safe decision, learn why, and unlock the next scenario."
               status="progress"
               statusLabel="3-Level Scenario Game"
-              icon={<OrbitalMark size={22} />}
+              icon={<OverviewGlyph kind="deck" size={20} />}
               actions={[
                 { label: 'Launch Mission Deck', variant: 'primary', to: '/playground' },
               ]}
@@ -658,7 +783,7 @@ export function Overview() {
               description="Search local NASA and PSI evidence, open cited passages, and inspect what is not in the source bundle."
               status="ready"
               statusLabel="Local Evidence Retrieval"
-              icon={<OrbitalMark size={22} />}
+              icon={<OverviewGlyph kind="copilot" size={20} />}
               actions={[
                 { label: 'Open Research Copilot', variant: 'primary', to: '/copilot' },
               ]}

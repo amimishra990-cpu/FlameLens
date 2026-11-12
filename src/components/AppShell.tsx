@@ -10,7 +10,23 @@ const AUTH_NAV = [
   { id: 'models', label: 'Model Lab', path: '/models' },
   { id: 'playground', label: 'Mission Deck', path: '/playground' },
   { id: 'copilot', label: 'Research Copilot', path: '/copilot' },
-];
+] as const;
+
+function NavIcon({ id }: { id: (typeof AUTH_NAV)[number]['id'] }) {
+  const paths: Record<(typeof AUTH_NAV)[number]['id'], JSX.Element> = {
+    overview: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
+    explorer: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></>,
+    comparison: <><path d="M4 8h16M4 16h16" /><circle cx="9" cy="8" r="2" /><circle cx="15" cy="16" r="2" /></>,
+    models: <><path d="M4 19V10l5 3 4-6 7 4v8H4Z" /></>,
+    playground: <><circle cx="12" cy="12" r="8" /><path d="M12 12l4.5-4.5" /><circle cx="12" cy="12" r="1.5" /></>,
+    copilot: <><path d="M12 3v4M12 17v4M3 12h4M17 12h4" /><circle cx="12" cy="12" r="3" /></>,
+  };
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[id]}
+    </svg>
+  );
+}
 
 
 export function AppShell() {
@@ -72,7 +88,8 @@ export function AppShell() {
                     className={`app-nav-link${isActive(item.path) ? ' is-active' : ''}`}
                     aria-current={isActive(item.path) ? 'page' : undefined}
                   >
-                    {item.label}
+                    <NavIcon id={item.id} />
+                    <span>{item.label}</span>
                   </Link>
                 </li>
               ))}
@@ -162,7 +179,8 @@ export function AppShell() {
                   aria-current={isActive(item.path) ? 'page' : undefined}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  {item.label}
+                  <NavIcon id={item.id} />
+                  <span>{item.label}</span>
                 </Link>
               </li>
             ))}
