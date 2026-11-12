@@ -1151,3 +1151,28 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Constrain the evidence panel so its status cards stay inside the hero. */
+.overview-hero-top {
+  grid-template-columns: minmax(0, 1fr) minmax(0, min(44vw, 660px));
+}
+
+.overview-hero-visual {
+  min-width: 0;
+}
+
+.overview-evidence-summary {
+  flex: 1 1 390px;
+  width: min(390px, 100%);
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .overview-hero-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .overview-hero-visual {
+    max-width: 100%;
+  }
+}

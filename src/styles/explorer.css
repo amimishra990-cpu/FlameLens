@@ -298,3 +298,27 @@
   background: var(--surface-2);
   padding: 14px 16px;
 }
+
+/* Keep the hero footer below its copy instead of overlaying wrapped text. */
+.explorer-page .explorer-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 320px;
+}
+
+.explorer-page .explorer-hero-foot {
+  position: relative;
+  inset: auto;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: auto;
+}
+
+@media (max-width: 520px) {
+  .explorer-page .explorer-hero-foot {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+}
