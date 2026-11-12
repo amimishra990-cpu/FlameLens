@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
 import katex from 'katex';
 
 function MathFormula({ formula }: { formula: string }) {
@@ -17,55 +16,16 @@ const story = [
   { chapter: 'Chapter V — The Mystery Beyond the Light', title: 'A question, not a verdict', text: 'Could tunnelling-sensitive hydrogen-transfer kinetics shift the boundary between visible-flame extinction, post-luminous cool-flame persistence and complete chemical extinction in microgravity droplet combustion?\n\nThe FLEX observations motivate the question. They do not measure tunnelling, and they do not prove this explanation. A mechanism must make predictions that survive independent tests—and be allowed to fail.' },
   { chapter: 'Epilogue', title: 'Where the light ends', text: 'The next pages leave the fairy tale and enter the workbench: reaction networks, transport equations, evidence boundaries and experiments that could answer back.\n\nAnd so, the mystery begins where the light ends.' },
 ];
-
-function FloatingBook() {
-  const host = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const node = host.current;
-    if (!node) return;
-    let renderer: THREE.WebGLRenderer;
-    try { renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); } catch { return; }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    renderer.setSize(node.clientWidth, node.clientHeight);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    node.appendChild(renderer.domElement);
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(32, node.clientWidth / node.clientHeight, .1, 100);
-    camera.position.set(0, 1.3, 7.4);
-    scene.add(new THREE.HemisphereLight(0xbadfff, 0x17111a, 2));
-    const key = new THREE.DirectionalLight(0xffd996, 3.4); key.position.set(-3, 5, 5); scene.add(key);
-    const rim = new THREE.PointLight(0x48cbed, 18, 15); rim.position.set(3, 1, -2); scene.add(rim);
-    const group = new THREE.Group(); scene.add(group);
-    // Build a single closed volume instead of loading the source set's row of books.
-    // The paper block and covers share one center, so the hero mesh reads as one book.
-    const cover = new THREE.MeshStandardMaterial({ color: 0x513820, roughness: .66, metalness: .08 });
-    const pages = new THREE.MeshStandardMaterial({ color: 0xd9c9a5, roughness: .88 });
-    const gilt = new THREE.MeshStandardMaterial({ color: 0xb59252, roughness: .38, metalness: .55 });
-    const addBox = (w: number, h: number, d: number, material: THREE.Material, x = 0, y = 0, z = 0) => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-      mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh);
-    };
-    addBox(3.55, .22, 2.35, cover, 0, -.63, 0);
-    addBox(3.42, 1.02, 2.23, pages, 0, -.005, 0);
-    addBox(3.55, .22, 2.35, cover, 0, .63, 0);
-    addBox(.34, 1.42, 2.35, cover, -1.61, 0, 0);
-    // Fine gold rules on the front cover give the book scale and detail.
-    addBox(2.7, .018, .018, gilt, .08, .752, .78);
-    addBox(2.7, .018, .018, gilt, .08, .752, -.78);
-    addBox(.018, .018, 1.58, gilt, -1.27, .752, 0);
-    addBox(.018, .018, 1.58, gilt, 1.43, .752, 0);
-    group.rotation.x = -.12;
-    group.rotation.z = -.08;
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let frame = 0;
-    const draw = (time: number) => { frame = requestAnimationFrame(draw); if (!reduced) { group.rotation.y = Math.sin(time * .00022) * .12; group.rotation.x = Math.sin(time * .00031) * .035; group.position.y = Math.sin(time * .0007) * .08; } renderer.render(scene, camera); };
-    draw(0);
-    const resize = () => { if (!node.clientWidth) return; camera.aspect = node.clientWidth / node.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(node.clientWidth, node.clientHeight); };
-    const observer = new ResizeObserver(resize); observer.observe(node);
-    return () => { cancelAnimationFrame(frame); observer.disconnect(); renderer.dispose(); renderer.domElement.remove(); scene.traverse((o) => { if ((o as THREE.Mesh).geometry) (o as THREE.Mesh).geometry.dispose(); }); cover.dispose(); pages.dispose(); gilt.dispose(); };
-  }, []);
-  return <div className="qh-book-scene" ref={host} aria-label="Floating three-dimensional antique book" role="img"><span>FLAMELENS · FIELD NOTES</span></div>;
-}
+const storyIllustrations = [
+  { src: '/images/storybook/flame-birth.jpg', alt: 'A tiny fuel droplet glowing inside a delicate flame in deep space' },
+  { src: '/images/storybook/afterglow.jpg', alt: 'A darkened droplet surrounded by a faint remaining vapour halo' },
+  { src: '/images/storybook/microgravity.jpg', alt: 'A spherical droplet burning in a microgravity research chamber' },
+  { src: '/images/storybook/molecular-pathway.jpg', alt: 'A conceptual molecular sequence showing hydrogen transfer and oxygen addition' },
+  { src: '/images/storybook/tunnelling.jpg', alt: 'A luminous particle beside a translucent energy barrier, suggesting quantum tunnelling' },
+  { src: '/images/storybook/afterglow.jpg', alt: 'A droplet and its fading flame after visible light has disappeared' },
+  { src: '/images/storybook/tunnelling.jpg', alt: 'A conceptual quantum hypothesis posed as a question to be tested' },
+  { src: '/images/storybook/flame-birth.jpg', alt: 'The small flame around the fuel droplet before its light fades' },
+];
 
 const datasets = [
   ['PSI-69 · FLEX', 'Primary retrospective anchor', 'Droplet extinction and reported post-luminous regression context. Can motivate timing analysis; existing records do not directly measure tunnelling or every radical.'],
@@ -77,26 +37,60 @@ const datasets = [
 const stages = ['Retrospective FLEX analysis', 'Quantum-kinetic mechanism development', 'Isotope-resolved microgravity experiments', 'Integration into FlameLens analysis'];
 
 export function QuantumHypothesis() {
-  const [page, setPage] = useState(0); const [flipping, setFlipping] = useState(false); const [storyDone, setStoryDone] = useState(false);
+  const [page, setPage] = useState(0); const [flipping, setFlipping] = useState(false); const [storyDone, setStoryDone] = useState(false); const [narrationOn, setNarrationOn] = useState(false);
   const [gravity, setGravity] = useState<'normal' | 'micro'>('micro'); const [event, setEvent] = useState(1); const [activeData, setActiveData] = useState(0);
-  const [chapterDone, setChapterDone] = useState(false); const touchX = useRef<number | null>(null); const scienceRef = useRef<HTMLElement>(null); const autoScrollDone = useRef(false);
-  const goScience = useCallback((automatic = false) => { setStoryDone(true); setChapterDone(true); if (automatic && !autoScrollDone.current && !matchMedia('(prefers-reduced-motion: reduce)').matches) { autoScrollDone.current = true; window.setTimeout(() => scienceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 650); } }, []);
-  const turn = useCallback((direction: number) => { if (flipping || storyDone) return; const next = Math.max(0, Math.min(story.length - 1, page + direction)); if (next === page) return; setFlipping(true); window.setTimeout(() => { setPage(next); setFlipping(false); if (next === story.length - 1 && direction > 0) window.setTimeout(() => goScience(true), 1200); }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 760); }, [flipping, goScience, page, storyDone]);
+  const touchX = useRef<number | null>(null); const scienceRef = useRef<HTMLElement>(null);
+  const speakPage = useCallback((index: number) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const narration = new SpeechSynthesisUtterance(`${story[index].chapter}. ${story[index].title}. ${story[index].text}`);
+    narration.lang = 'en-US'; narration.rate = 0.92; narration.pitch = 0.88;
+    window.speechSynthesis.speak(narration);
+  }, []);
+  const completeStory = useCallback(() => {
+    if (flipping || storyDone || page !== story.length - 1) return;
+    setFlipping(true);
+    window.setTimeout(() => {
+      window.speechSynthesis?.cancel();
+      setStoryDone(true);
+      setFlipping(false);
+      window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 650);
+  }, [flipping, page, storyDone]);
+  const turn = useCallback((direction: number) => {
+    if (flipping || storyDone) return;
+    if (direction > 0 && page === story.length - 1) { completeStory(); return; }
+    const next = Math.max(0, Math.min(story.length - 1, page + direction));
+    if (next === page) return;
+    setFlipping(true);
+    window.setTimeout(() => { setPage(next); setFlipping(false); if (narrationOn) speakPage(next); }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 760);
+  }, [completeStory, flipping, narrationOn, page, speakPage, storyDone]);
+  useEffect(() => {
+    if (storyDone) return;
+    const previousOverflow = document.documentElement.style.overflow;
+    document.body.classList.add('qh-reading-lock');
+    document.documentElement.style.overflow = 'hidden';
+    return () => { document.body.classList.remove('qh-reading-lock'); document.documentElement.style.overflow = previousOverflow; window.speechSynthesis?.cancel(); };
+  }, [storyDone]);
+  useEffect(() => { if (storyDone) scienceRef.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }, [storyDone]);
+  const toggleNarration = useCallback(() => {
+    if (narrationOn) { window.speechSynthesis?.cancel(); setNarrationOn(false); return; }
+    setNarrationOn(true); speakPage(page);
+  }, [narrationOn, page, speakPage]);
   useEffect(() => { const key = (e: KeyboardEvent) => { if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return; if (e.key === 'ArrowRight') turn(1); if (e.key === 'ArrowLeft') turn(-1); }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key); }, [turn]);
   const current = story[page];
   return <div className="quantum-hypothesis">
-    <section className="qh-opening" aria-labelledby="qh-title">
+    {!storyDone && <section className="qh-opening qh-reading-view" aria-label="Immersive FlameLens science storybook">
       <div className="qh-stars" aria-hidden="true" />
-      <div className="qh-intro"><p className="qh-eyebrow">FLAMELENS · A SCIENTIFIC STORYBOOK</p><h1 id="qh-title">Can a flame persist<br/><em>after its light has gone?</em></h1><p>A story about a droplet, a disappearing flame, and a molecular question still waiting for an answer.</p><span className="qh-hypothesis-note">A falsifiable hypothesis · not an established explanation</span></div>
-      <div className="qh-book-stage"><FloatingBook /><div className={`qh-open-book ${flipping ? 'is-flipping' : ''} ${storyDone ? 'is-closing' : ''}`} onTouchStart={e => { touchX.current = e.touches[0].clientX; }} onTouchEnd={e => { if (touchX.current === null) return; const dx = e.changedTouches[0].clientX - touchX.current; if (Math.abs(dx) > 45) turn(dx < 0 ? 1 : -1); touchX.current = null; }}>
-        <div className="qh-spine"/><button className="qh-page qh-left-page" onClick={() => turn(-1)} aria-label="Turn to previous page"><span className="qh-chapter">{current.chapter}</span><span className="qh-story-title">{page === 0 ? 'The light, and what followed' : story[Math.max(0, page - 1)].title}</span><span className="qh-page-number">{page * 2 + 1}</span></button>
-        <button className="qh-page qh-right-page" onClick={() => turn(1)} aria-label="Turn to next page"><span className="qh-chapter">{current.chapter}</span><span className="qh-story-title">{current.title}</span><span className="qh-story-text">{current.text}</span><span className="qh-page-number">{page * 2 + 2}</span></button>
+      <div className="qh-book-stage"><div className={`qh-open-book ${flipping ? 'is-flipping' : ''}`} onTouchStart={e => { touchX.current = e.touches[0].clientX; }} onTouchEnd={e => { if (touchX.current === null) return; const dx = e.changedTouches[0].clientX - touchX.current; if (Math.abs(dx) > 45) turn(dx < 0 ? 1 : -1); touchX.current = null; }}>
+        <div className="qh-spine"/><div className="qh-page qh-left-page"><span className="qh-chapter">FLAMELENS · FIELD NOTES</span><div className="qh-illustration-frame"><img src={storyIllustrations[page].src} alt={storyIllustrations[page].alt} loading={page < 2 ? 'eager' : 'lazy'} /></div><span className="qh-story-title">{page === 0 ? 'The light, and what followed' : current.title}</span><span className="qh-page-number">{page * 2 + 1}</span></div>
+        <div className="qh-page qh-right-page" aria-live="polite"><span className="qh-chapter">{current.chapter}</span><h1 className="qh-story-title">{current.title}</h1><div className="qh-story-text">{current.text.split('\n\n').map((paragraph, i) => <p key={i}>{paragraph}</p>)}</div><span className="qh-page-number">{page * 2 + 2}</span></div>
         <div className="qh-turn-leaf" aria-hidden="true" />
-      </div><div className="qh-book-nav"><button onClick={() => turn(-1)} disabled={page === 0 || flipping}>← Previous</button><span>SPREAD {String(page + 1).padStart(2, '0')} / {String(story.length).padStart(2, '0')}</span><button onClick={() => turn(1)} disabled={flipping || page === story.length - 1}>Turn page →</button></div><p className="qh-hint">Click either page · swipe · or use ← → keys</p></div>
-      <button className="qh-skip" onClick={() => { goScience(false); window.setTimeout(() => scienceRef.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }), 30); }}>Explore the Science <span>↓</span></button>
-    </section>
+      </div><div className="qh-reader-toolbar"><button className="qh-narration-button" onClick={toggleNarration} disabled={!('speechSynthesis' in window)} aria-pressed={narrationOn}>{narrationOn ? 'Ⅱ Stop narration' : '▷ Listen to this story'}</button><div className="qh-book-nav"><button onClick={() => turn(-1)} disabled={page === 0 || flipping}>← Previous</button><span>SPREAD {String(page + 1).padStart(2, '0')} / {String(story.length).padStart(2, '0')}</span><button onClick={() => turn(1)} disabled={flipping}>{page === story.length - 1 ? 'Continue to research →' : 'Turn page →'}</button></div><p className="qh-hint">Turn each page to continue · use ← → keys</p></div></div>
+    </section>}
     <section className="qh-science" ref={scienceRef} id="qh-science">
-      <div className="qh-science-head"><p className="qh-eyebrow">FROM STORY TO RESEARCH</p><h2>Can a Flame Persist After Its Light Has Gone?</h2><p className="qh-lede">A quantum-kinetically informed hypothesis for cool-flame persistence in microgravity.</p><p className="qh-caveat">The observations motivate a test. They do not establish that tunnelling causes post-luminous persistence.</p>{storyDone && <span className="qh-transition-mark">{chapterDone ? 'THE INVESTIGATION' : ''}</span>}</div>
+      <div className="qh-science-head"><p className="qh-eyebrow">FROM STORY TO RESEARCH</p><h2>Can a Flame Persist After Its Light Has Gone?</h2><p className="qh-lede">A quantum-kinetically informed hypothesis for cool-flame persistence in microgravity.</p><p className="qh-caveat">The observations motivate a test. They do not establish that tunnelling causes post-luminous persistence.</p></div>
+      <section className="qh-paper-featured" aria-labelledby="qh-paper-title"><div><p className="qh-eyebrow">THE SAMPLE PAPER · FULL TECHNICAL FRAMEWORK</p><h3 id="qh-paper-title">Take the research with you</h3><p>Read the hypothesis, equations, evidence limits and proposed experiments in the full paper.</p></div><a className="qh-paper-button" href="/research/quantum-hypothesis-paper.pdf" target="_blank" rel="noreferrer">Read the sample paper ↗</a></section>
       <article className="qh-section qh-phenomenon"><header><span>01 · THE OBSERVATION</span><h2>When the light disappears, does the fire really end?</h2></header><div className="qh-two-col"><div><p>In microgravity droplet combustion, certain sufficiently large n-alkane droplets in NASA’s FLEX investigation continued to vaporise after the visible hot flame underwent radiative extinction, before a later distinct extinction event. This motivates the question of what persists between those observations.</p><p>Visible luminosity, heat release and chemical conversion are different observables. A dark image does not prove all reactions stopped; droplet regression does not identify which reactions continued. Low-temperature oxidation and negative-temperature-coefficient (NTC) chemistry provide a possible chemical context: in some temperature ranges, alkane oxidation rates can respond non-monotonically as temperature changes.</p></div><div className="qh-droplet-visual" role="img" aria-label="Schematic droplet cross-section: fuel droplet, surrounding gas, diffusion and radiation"><div className="qh-orbit orbit-a"/><div className="qh-orbit orbit-b"/><div className="qh-droplet"/><i className="qh-transport t1">diffusion</i><i className="qh-transport t2">radiation</i><i className="qh-transport t3">fuel vapour</i><small>SCHEMATIC · NOT TO SCALE</small></div></div></article>
       <article className="qh-section"><header><span>02 · THREE DIFFERENT ENDINGS</span><h2>One droplet. Three clocks.</h2></header><div className="qh-timeline"><input aria-label="Move timeline focus between extinction events" type="range" min="0" max="2" value={event} onChange={e => setEvent(Number(e.target.value))}/><div className="qh-events">{[['tL','Visible luminous hot flame is lost'],['tC','Measurable chemical conversion ceases'],['tV','Measurable droplet regression / vaporisation ceases']].map(([id, label], i)=><button key={id} className={event===i?'selected':''} onClick={()=>setEvent(i)}><b>{id}</b><span>{label}</span></button>)}</div></div><MathFormula formula={String.raw`\Delta t_{\mathrm{PL}} = t_C - t_L`} /><p className="qh-note">This interval needs suitable chemical or calorimetric evidence. With only optical data and droplet size, chemical cessation is inferred and the interval must carry uncertainty. The ordering and separation are not universal constants.</p></article>
       <article className="qh-section"><header><span>03 · THE CHEMISTRY</span><h2>A hidden low-temperature pathway</h2></header><div className="qh-reaction-path"><div className="qh-reaction-step featured"><small>H TRANSFER</small><b>RH + X → R + XH</b></div><span>→</span><div className="qh-reaction-step"><b>R + O₂ ⇌ RO₂</b><small>alkylperoxy</small></div><span>→</span><div className="qh-reaction-step"><b>RO₂ → QOOH</b><small>hydroperoxyalkyl</small></div><span>→</span><div className="qh-reaction-step"><b>QOOH + O₂ → O₂QOOH</b></div><span>→</span><div className="qh-reaction-step"><b>O₂QOOH → KHP + OH + …</b></div></div><p>Hydrogen abstraction creates R; oxygen addition forms RO₂; internal H transfer can form QOOH; further oxygen addition and subsequent chemistry can support chain branching under suitable conditions. This pathway is schematic: real mechanisms include multiple isomers, competing pathways, pressure-dependent processes and fuel-specific chemistry. Not all intermediates are measured in FLEX.</p></article>
@@ -108,8 +102,7 @@ export function QuantumHypothesis() {
       <article className="qh-section"><header><span>09 · PROPOSED ROADMAP</span><h2>From records to a discriminating test</h2></header><div className="qh-roadmap">{stages.map((s,i)=><div key={s}><span>0{i+1}</span><b>{s}</b><p>{['Audit timing, diameter histories, radiometry and uncertainty in the existing FLEX record.','Compare consistently calibrated classical and quantum-corrected pathways with sensitivity analysis.','Use matched conditions, droplet diameter histories, radiometry, imaging and species-sensitive diagnostics.','Integrate evidence with explicit provenance and uncertainty; do not convert association into molecular causation.'][i]}</p></div>)}</div><p className="qh-proposal-label">PROPOSED FUTURE WORK · THESE EXPERIMENTS ARE NOT CLAIMED AS COMPLETED</p></article>
       <article className="qh-section"><header><span>10 · LIMITATIONS</span><h2>What the evidence cannot yet tell us</h2></header><div className="qh-limit-grid">{[['Measurement','Timing, imaging, radiometry and diameter histories have finite resolution and uncertainty.'],['Coverage','Available fuels, sizes, conditions and diagnostics may not span the boundary of interest.'],['Kinetics','Rate constants and quantum corrections carry parameter uncertainty.'],['Transport & radiation','Diffusion, flow, heat loss and radiative properties couple to chemistry.'],['Mechanism structure','Alternative pathways and model choices can fit similar observations.'],['Identifiability','Droplet regression alone cannot name a radical pathway; an isotope effect alone does not prove tunnelling.']].map(([a,b])=><div key={a}><b>{a}</b><p>{b}</p></div>)}</div><p>SHAP and other feature attribution methods describe associations in a fitted model; they do not establish molecular causation.</p></article>
       <article className="qh-section qh-conclusion"><header><span>11 · WHY ASK?</span><h2>What would make this important?</h2></header><p>A positive result could show that quantum-sensitive elementary kinetics deserve inclusion in selected low-temperature combustion predictions, provided the effect survives independent, discriminating tests. A negative result would constrain those models and sharpen the boundary between chemical and transport explanations.</p><blockquote>“When the visible flame disappears, could a quantum-sensitive molecular reaction network be helping the combustion process persist in a form that conventional optical fire interpretation fails to recognise?”</blockquote><p className="qh-note">Research hypothesis only. No NASA endorsement or operational spacecraft fire-safety certification is implied.</p></article>
-      <section className="qh-paper"><p className="qh-eyebrow">PRIMARY SOURCE</p><h2>Read the Full Research Paper</h2><p>Explore the complete technical framework, equations, proposed quantum-kinetic mechanism, falsifiable predictions and experimental roadmap.</p><a className="qh-paper-button" href="/research/quantum-hypothesis-paper.pdf" target="_blank" rel="noreferrer">Open Full Research Paper ↗</a><a className="qh-download" href="/research/quantum-hypothesis-paper.pdf" download="FlameLens_Quantum_Hypothesis_Paper.pdf">Download the PDF ↓</a></section>
-      <footer className="qh-footer">FLAMELENS · HYPOTHESIS EXPLORER <a href="#qh-title">Back to story ↑</a></footer>
+      <footer className="qh-footer">FLAMELENS · HYPOTHESIS EXPLORER <a href="#qh-science">Back to top ↑</a></footer>
     </section>
   </div>;
 }
