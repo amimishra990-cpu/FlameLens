@@ -42,7 +42,8 @@ export default function App() {
     location.pathname === '/comparison' ||
     location.pathname.startsWith('/models') ||
     location.pathname === '/playground' ||
-    location.pathname === '/copilot';
+    location.pathname === '/copilot' ||
+    location.pathname === '/quantum';
 
   return (
     <AuthProvider>
@@ -58,7 +59,6 @@ export default function App() {
         <Route path="/forgot-password" element={<AuthShell />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/quantum" element={<Suspense fallback={<div className="app-placeholder">Opening the storybook…</div>}><QuantumResearch /></Suspense>} />
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<Overview />} />
           <Route path="/explorer" element={<Explorer />} />
@@ -67,6 +67,7 @@ export default function App() {
           <Route path="/models/:trackId?" element={<Suspense fallback={<div className="app-placeholder">Loading research workspace…</div>}><ModelLab /></Suspense>} />
           <Route path="/playground" element={<MissionDeck />} />
           <Route path="/copilot" element={<Suspense fallback={<div className="app-placeholder">Loading evidence copilot…</div>}><ResearchCopilot /></Suspense>} />
+          <Route path="/quantum" element={<Suspense fallback={<div className="app-placeholder">Opening the storybook…</div>}><QuantumResearch /></Suspense>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

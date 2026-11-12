@@ -6,6 +6,23 @@ function MathFormula({ formula }: { formula: string }) {
   return <div className="qh-rendered-equation" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
+function preferredNarratorVoice() {
+  if (!('speechSynthesis' in window)) return undefined;
+  return window.speechSynthesis.getVoices()
+    .filter((voice) => /^en([-_]|$)/i.test(voice.lang))
+    .sort((a, b) => {
+      const score = (name: string, lang: string, local: boolean) =>
+        (/natural|neural|premium|online/i.test(name) ? 50 : 0) +
+        (/aria|jenny|ava|samantha|google us english|zira/i.test(name) ? 25 : 0) +
+        (/^en-US/i.test(lang) ? 15 : /^en-GB/i.test(lang) ? 8 : 0) +
+        (!local ? 10 : 0) -
+        (/novelty|whisper/i.test(name) ? 80 : 0);
+      return score(b.name, b.lang, b.localService) - score(a.name, a.lang, a.localService);
+    })[0];
+}
+
+type AmbientSound = { context: AudioContext; master: GainNode; oscillators: OscillatorNode[] };
+
 const story = [
   { chapter: 'Prologue', title: 'Once upon a time, long ago...', text: 'Once upon a time, long ago, in a place far beyond the reach of ordinary gravity, there lived a tiny droplet of fuel.\n\nAround it burned a beautiful flame. It glowed, danced and illuminated the darkness around it.\n\nThen, one moment, the light disappeared.\n\nThe story should have ended there.\n\nBut it didn’t.' },
   { chapter: 'Chapter I — The Flame That Disappeared', title: 'An ending in two acts', text: 'In some NASA FLEX droplet experiments, sufficiently large n-alkane droplets continued to vaporise after their visible hot flame underwent radiative extinction. Later, a distinct event marked the end of that regression.\n\nThe camera saw darkness. The droplet’s changing size told another part of the story. Neither observation alone reveals every reaction taking place in the surrounding gas.' },
@@ -37,26 +54,86 @@ const datasets = [
 const stages = ['Retrospective FLEX analysis', 'Quantum-kinetic mechanism development', 'Isotope-resolved microgravity experiments', 'Integration into FlameLens analysis'];
 
 export function QuantumHypothesis() {
-  const [page, setPage] = useState(0); const [flipping, setFlipping] = useState(false); const [storyDone, setStoryDone] = useState(false); const [narrationOn, setNarrationOn] = useState(false);
+  const [page, setPage] = useState(0); const [flipping, setFlipping] = useState(false); const [storyDone, setStoryDone] = useState(false); const [narrationOn, setNarrationOn] = useState(false); const [ambienceOn, setAmbienceOn] = useState(false); const [narratorName, setNarratorName] = useState(''); const [audioNotice, setAudioNotice] = useState('');
   const [gravity, setGravity] = useState<'normal' | 'micro'>('micro'); const [event, setEvent] = useState(1); const [activeData, setActiveData] = useState(0);
   const touchX = useRef<number | null>(null); const scienceRef = useRef<HTMLElement>(null);
+  const ambienceRef = useRef<AmbientSound | null>(null); const ambienceSuspendTimer = useRef<number | null>(null);
   const speakPage = useCallback((index: number) => {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const narration = new SpeechSynthesisUtterance(`${story[index].chapter}. ${story[index].title}. ${story[index].text}`);
-    narration.lang = 'en-US'; narration.rate = 0.92; narration.pitch = 0.88;
+    const voice = preferredNarratorVoice();
+    if (voice) { narration.voice = voice; narration.lang = voice.lang; setNarratorName(voice.name); }
+    narration.rate = 0.87; narration.pitch = 1.02; narration.volume = 0.96;
     window.speechSynthesis.speak(narration);
   }, []);
+  const stopAmbience = useCallback(() => {
+    const sound = ambienceRef.current;
+    if (!sound) { setAmbienceOn(false); return; }
+    const now = sound.context.currentTime;
+    sound.master.gain.cancelScheduledValues(now);
+    sound.master.gain.setTargetAtTime(0, now, 0.7);
+    if (ambienceSuspendTimer.current !== null) window.clearTimeout(ambienceSuspendTimer.current);
+    ambienceSuspendTimer.current = window.setTimeout(() => { if (sound.context.state !== 'closed') void sound.context.suspend().catch(() => {}); }, 2200);
+    setAmbienceOn(false);
+  }, []);
+  const toggleAmbience = useCallback(() => {
+    if (ambienceOn) { stopAmbience(); return; }
+    try {
+      let sound = ambienceRef.current;
+      if (!sound) {
+        const context = new window.AudioContext();
+        const filter = context.createBiquadFilter();
+        filter.type = 'lowpass'; filter.frequency.value = 460; filter.Q.value = 0.45;
+        const master = context.createGain(); master.gain.value = 0;
+        const dry = context.createGain(); dry.gain.value = 0.68;
+        const wet = context.createGain(); wet.gain.value = 0.36;
+        const reverb = context.createConvolver();
+        const impulseLength = Math.floor(context.sampleRate * 2.6);
+        const impulse = context.createBuffer(2, impulseLength, context.sampleRate);
+        for (let channel = 0; channel < impulse.numberOfChannels; channel += 1) {
+          const samples = impulse.getChannelData(channel);
+          for (let i = 0; i < samples.length; i += 1) samples[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / samples.length, 2.8);
+        }
+        reverb.buffer = impulse;
+        filter.connect(dry); filter.connect(reverb); dry.connect(master); reverb.connect(wet); wet.connect(master); master.connect(context.destination);
+        const oscillators: OscillatorNode[] = [];
+        [[110, 0.25], [130.81, 0.16], [164.81, 0.11], [220, 0.035]].forEach(([frequency, level]) => {
+          const oscillator = context.createOscillator();
+          const voiceGain = context.createGain();
+          oscillator.type = 'sine'; oscillator.frequency.value = frequency;
+          voiceGain.gain.value = level;
+          oscillator.connect(voiceGain); voiceGain.connect(filter); oscillator.start(); oscillators.push(oscillator);
+        });
+        const tide = context.createOscillator(); const tideDepth = context.createGain();
+        tide.frequency.value = 0.07; tideDepth.gain.value = 82;
+        tide.connect(tideDepth); tideDepth.connect(filter.frequency); tide.start(); oscillators.push(tide);
+        sound = { context, master, oscillators };
+        ambienceRef.current = sound;
+      }
+      if (ambienceSuspendTimer.current !== null) { window.clearTimeout(ambienceSuspendTimer.current); ambienceSuspendTimer.current = null; }
+      const activeSound = sound;
+      void activeSound.context.resume().then(() => {
+        const now = activeSound.context.currentTime;
+        activeSound.master.gain.cancelScheduledValues(now);
+        activeSound.master.gain.setTargetAtTime(0.16, now, 1.25);
+      }).catch(() => { setAudioNotice('Ambient audio is unavailable in this browser.'); setAmbienceOn(false); });
+      setAudioNotice(''); setAmbienceOn(true);
+    } catch {
+      setAudioNotice('Ambient audio is unavailable in this browser.'); setAmbienceOn(false);
+    }
+  }, [ambienceOn, stopAmbience]);
   const completeStory = useCallback(() => {
     if (flipping || storyDone || page !== story.length - 1) return;
     setFlipping(true);
     window.setTimeout(() => {
       window.speechSynthesis?.cancel();
+      stopAmbience(); setNarrationOn(false);
       setStoryDone(true);
       setFlipping(false);
       window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 650);
-  }, [flipping, page, storyDone]);
+  }, [flipping, page, storyDone, stopAmbience]);
   const turn = useCallback((direction: number) => {
     if (flipping || storyDone) return;
     if (direction > 0 && page === story.length - 1) { completeStory(); return; }
@@ -72,11 +149,22 @@ export function QuantumHypothesis() {
     document.documentElement.style.overflow = 'hidden';
     return () => { document.body.classList.remove('qh-reading-lock'); document.documentElement.style.overflow = previousOverflow; window.speechSynthesis?.cancel(); };
   }, [storyDone]);
+  useEffect(() => {
+    const updateVoice = () => { const voice = preferredNarratorVoice(); if (voice) setNarratorName(voice.name); };
+    updateVoice();
+    window.speechSynthesis?.addEventListener('voiceschanged', updateVoice);
+    return () => window.speechSynthesis?.removeEventListener('voiceschanged', updateVoice);
+  }, []);
+  useEffect(() => () => {
+    if (ambienceSuspendTimer.current !== null) window.clearTimeout(ambienceSuspendTimer.current);
+    if (ambienceRef.current) { ambienceRef.current.oscillators.forEach((oscillator) => { try { oscillator.stop(); } catch { /* Already stopped. */ } }); void ambienceRef.current.context.close().catch(() => {}); ambienceRef.current = null; }
+  }, []);
   useEffect(() => { if (storyDone) scienceRef.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }, [storyDone]);
   const toggleNarration = useCallback(() => {
     if (narrationOn) { window.speechSynthesis?.cancel(); setNarrationOn(false); return; }
+    if (!ambienceOn) toggleAmbience();
     setNarrationOn(true); speakPage(page);
-  }, [narrationOn, page, speakPage]);
+  }, [ambienceOn, narrationOn, page, speakPage, toggleAmbience]);
   useEffect(() => { const key = (e: KeyboardEvent) => { if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return; if (e.key === 'ArrowRight') turn(1); if (e.key === 'ArrowLeft') turn(-1); }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key); }, [turn]);
   const current = story[page];
   return <div className="quantum-hypothesis">
@@ -86,7 +174,7 @@ export function QuantumHypothesis() {
         <div className="qh-spine"/><div className="qh-page qh-left-page"><span className="qh-chapter">FLAMELENS · FIELD NOTES</span><div className="qh-illustration-frame"><img src={storyIllustrations[page].src} alt={storyIllustrations[page].alt} loading={page < 2 ? 'eager' : 'lazy'} /></div><span className="qh-story-title">{page === 0 ? 'The light, and what followed' : current.title}</span><span className="qh-page-number">{page * 2 + 1}</span></div>
         <div className="qh-page qh-right-page" aria-live="polite"><span className="qh-chapter">{current.chapter}</span><h1 className="qh-story-title">{current.title}</h1><div className="qh-story-text">{current.text.split('\n\n').map((paragraph, i) => <p key={i}>{paragraph}</p>)}</div><span className="qh-page-number">{page * 2 + 2}</span></div>
         <div className="qh-turn-leaf" aria-hidden="true" />
-      </div><div className="qh-reader-toolbar"><button className="qh-narration-button" onClick={toggleNarration} disabled={!('speechSynthesis' in window)} aria-pressed={narrationOn}>{narrationOn ? 'Ⅱ Stop narration' : '▷ Listen to this story'}</button><div className="qh-book-nav"><button onClick={() => turn(-1)} disabled={page === 0 || flipping}>← Previous</button><span>SPREAD {String(page + 1).padStart(2, '0')} / {String(story.length).padStart(2, '0')}</span><button onClick={() => turn(1)} disabled={flipping}>{page === story.length - 1 ? 'Continue to research →' : 'Turn page →'}</button></div><p className="qh-hint">Turn each page to continue · use ← → keys</p></div></div>
+      </div><div className="qh-reader-toolbar"><div className="qh-audio-controls" role="group" aria-label="Story audio controls"><button className="qh-narration-button" onClick={toggleNarration} disabled={!('speechSynthesis' in window)} aria-pressed={narrationOn}>{narrationOn ? 'Ⅱ Stop narration' : '▷ Listen to story'}</button><button className="qh-music-button" onClick={toggleAmbience} disabled={!('AudioContext' in window)} aria-pressed={ambienceOn}>{ambienceOn ? '♪ Space ambience: on' : '♪ Space ambience: off'}</button></div><div className="qh-book-nav"><button onClick={() => turn(-1)} disabled={page === 0 || flipping}>← Previous</button><span>SPREAD {String(page + 1).padStart(2, '0')} / {String(story.length).padStart(2, '0')}</span><button onClick={() => turn(1)} disabled={flipping}>{page === story.length - 1 ? 'Continue to research →' : 'Turn page →'}</button></div><p className="qh-audio-status" aria-live="polite">{audioNotice || `Narrator: ${narratorName || 'best available English voice'}${ambienceOn ? ' · soft ambient music playing' : ''}`}</p><p className="qh-hint">Turn each page to continue · use ← → keys</p></div></div>
     </section>}
     <section className="qh-science" ref={scienceRef} id="qh-science">
       <div className="qh-science-head"><p className="qh-eyebrow">FROM STORY TO RESEARCH</p><h2>Can a Flame Persist After Its Light Has Gone?</h2><p className="qh-lede">A quantum-kinetically informed hypothesis for cool-flame persistence in microgravity.</p><p className="qh-caveat">The observations motivate a test. They do not establish that tunnelling causes post-luminous persistence.</p></div>

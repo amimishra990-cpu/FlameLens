@@ -82,12 +82,16 @@ body.qh-reading-lock .site-header,body.qh-reading-lock .fl-assistant-root { disp
 .qh-story-text p { margin:0 0 1em; }
 .qh-story-text p:first-child::first-letter { float:left; margin:.04em .12em 0 0; color:#9a712e; font:500 3.1em/.78 var(--font-display); }
 .qh-reading-view .qh-page-number { z-index:1; color:#8e6b32; font-size:11px; }
-.qh-reader-toolbar { z-index:2; width:min(1180px,100%); display:grid; grid-template-columns:auto minmax(0,1fr); grid-template-rows:auto auto; align-items:center; column-gap:20px; margin:0 auto; padding-top:12px; }
-.qh-reader-toolbar .qh-narration-button { grid-column:1; grid-row:1; justify-self:start; margin:0; padding:10px 14px; cursor:pointer; }
+.qh-reader-toolbar { z-index:2; width:min(1180px,100%); display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto auto auto; align-items:center; column-gap:20px; margin:0 auto; padding-top:12px; }
+.qh-audio-controls { grid-column:1; grid-row:1; display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.qh-reader-toolbar .qh-audio-controls button { margin:0; padding:10px 13px; cursor:pointer; }
+.qh-reader-toolbar .qh-audio-controls button:disabled { opacity:.4; cursor:not-allowed; }
 .qh-book-nav { width:100%; padding:0; }
 .qh-reader-toolbar .qh-book-nav { grid-column:2; grid-row:1; }
-.qh-reader-toolbar .qh-hint { grid-column:1 / -1; grid-row:2; margin:0; }
-.qh-book-nav button,.qh-narration-button { border-color:rgba(227,195,126,.5); color:#e8d5a9; background:rgba(7,13,20,.82); }
+.qh-book-nav button,.qh-narration-button,.qh-music-button { border:1px solid rgba(227,195,126,.5); color:#e8d5a9; background:rgba(7,13,20,.82); }
+.qh-reader-toolbar .qh-music-button[aria-pressed="true"] { border-color:rgba(103,213,233,.65); color:#b8edf0; background:rgba(32,89,103,.25); }
+.qh-audio-status { grid-column:1 / -1; grid-row:2; margin:8px 0 0; color:#a9bcc1; font:9px var(--font-mono); text-align:center; }
+.qh-reader-toolbar .qh-hint { grid-column:1 / -1; grid-row:3; margin:0; }
 .qh-reader-toolbar .qh-hint { padding-top:8px; }
 .qh-science { scroll-margin-top:18px; }
 .qh-paper-featured { display:flex; align-items:center; justify-content:space-between; gap:26px; margin:26px 0 12px; padding:24px clamp(20px,4vw,42px); border:1px solid rgba(227,195,126,.65); background:radial-gradient(ellipse at 88% 12%,rgba(227,195,126,.17),transparent 50%),linear-gradient(110deg,rgba(46,34,16,.55),rgba(8,16,26,.96) 64%); box-shadow:0 14px 45px rgba(0,0,0,.24),inset 0 0 26px rgba(227,195,126,.05); }
@@ -105,13 +109,14 @@ body.qh-reading-lock .site-header,body.qh-reading-lock .fl-assistant-root { disp
   .qh-reading-view .qh-story-text { font-size:clamp(11px,3.25vw,14px); line-height:1.62; }
   .qh-illustration-frame { margin:13px 0; }
   .qh-reader-toolbar { grid-template-columns:1fr; padding-top:8px; }
-  .qh-reader-toolbar .qh-narration-button,.qh-reader-toolbar .qh-book-nav,.qh-reader-toolbar .qh-hint { grid-column:1; }
-  .qh-reader-toolbar .qh-narration-button { grid-row:1; justify-self:center; }
+  .qh-audio-controls,.qh-reader-toolbar .qh-book-nav,.qh-reader-toolbar .qh-audio-status,.qh-reader-toolbar .qh-hint { grid-column:1; }
+  .qh-audio-controls { grid-row:1; justify-content:center; gap:6px; }
+  .qh-reader-toolbar .qh-audio-controls button { padding:8px 9px; font-size:9px; }
   .qh-reader-toolbar .qh-book-nav { grid-row:2; }
-  .qh-reader-toolbar .qh-hint { grid-row:3; }
+  .qh-reader-toolbar .qh-audio-status { grid-row:3; margin-top:6px; font-size:8px; }
+  .qh-reader-toolbar .qh-hint { grid-row:4; }
   .qh-reader-toolbar .qh-book-nav { gap:8px; font-size:8px; }
   .qh-reader-toolbar .qh-book-nav button { padding:8px 7px; font-size:8px; }
-  .qh-narration-button { margin-bottom:8px; }
   .qh-paper-featured { align-items:flex-start; flex-direction:column; gap:15px; padding:21px 18px; }
 }
 @media(max-width:900px){.qh-datasets,.qh-predictions{grid-template-columns:repeat(2,1fr)}.qh-hypotheses{grid-template-columns:1fr}.qh-roadmap{grid-template-columns:repeat(2,1fr)}.qh-two-col{gap:24px}.qh-story-text{font-size:10px}}

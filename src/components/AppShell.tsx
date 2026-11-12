@@ -10,7 +10,7 @@ const AUTH_NAV = [
   { id: 'models', label: 'Model Lab', path: '/models' },
   { id: 'playground', label: 'Mission Deck', path: '/playground' },
   { id: 'copilot', label: 'Research Copilot', path: '/copilot' },
-  { id: 'quantum', label: 'Quantum Hypothesis', path: '/quantum' },
+  { id: 'quantum', label: 'Storybook', path: '/quantum' },
 ] as const;
 
 function NavIcon({ id }: { id: (typeof AUTH_NAV)[number]['id'] }) {
