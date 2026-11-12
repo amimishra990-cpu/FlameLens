@@ -69,6 +69,7 @@ export function Header() {
               </Link>
             ),
           )}
+          <Link to="/quantum" className={location.pathname === '/quantum' ? 'is-active' : ''}>Storybook</Link>
         </nav>
 
         <div className="header-actions">
@@ -117,6 +118,7 @@ export function Header() {
               {n.label}
             </a>
           ))}
+          <Link to="/quantum" onClick={() => setMenuOpen(false)}>Quantum storybook</Link>
           <hr className="hairline" />
           {session ? (
             <>

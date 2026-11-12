@@ -35,6 +35,9 @@ export function Hero() {
               <Link to="/sign-in" className="btn btn-secondary">
                 Sign in
               </Link>
+              <Link to="/quantum" className="btn btn-secondary quantum-story-cta">
+                Enter the storybook
+              </Link>
             </div>
           </Reveal>
           <Reveal delay={340}>

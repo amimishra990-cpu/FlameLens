@@ -15,6 +15,7 @@ import { MissionDeck } from './pages/MissionDeck';
 
 const ModelLab = lazy(() => import('./pages/ModelLab').then(({ ModelLab }) => ({ default: ModelLab })));
 const ResearchCopilot = lazy(() => import('./pages/ResearchCopilot').then(({ ResearchCopilot }) => ({ default: ResearchCopilot })));
+const QuantumResearch = lazy(() => import('./pages/QuantumResearch').then(({ QuantumResearch }) => ({ default: QuantumResearch })));
 const GlobalAssistant = lazy(() => import('./components/GlobalAssistant').then(({ GlobalAssistant }) => ({ default: GlobalAssistant })));
 
 function ScrollRestoration() {
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/forgot-password" element={<AuthShell />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/quantum" element={<Suspense fallback={<div className="app-placeholder">Opening the storybook…</div>}><QuantumResearch /></Suspense>} />
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<Overview />} />
           <Route path="/explorer" element={<Explorer />} />

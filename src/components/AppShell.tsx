@@ -10,6 +10,7 @@ const AUTH_NAV = [
   { id: 'models', label: 'Model Lab', path: '/models' },
   { id: 'playground', label: 'Mission Deck', path: '/playground' },
   { id: 'copilot', label: 'Research Copilot', path: '/copilot' },
+  { id: 'quantum', label: 'Quantum Hypothesis', path: '/quantum' },
 ] as const;
 
 function NavIcon({ id }: { id: (typeof AUTH_NAV)[number]['id'] }) {
@@ -20,6 +21,7 @@ function NavIcon({ id }: { id: (typeof AUTH_NAV)[number]['id'] }) {
     models: <><path d="M4 19V10l5 3 4-6 7 4v8H4Z" /></>,
     playground: <><circle cx="12" cy="12" r="8" /><path d="M12 12l4.5-4.5" /><circle cx="12" cy="12" r="1.5" /></>,
     copilot: <><path d="M12 3v4M12 17v4M3 12h4M17 12h4" /><circle cx="12" cy="12" r="3" /></>,
+    quantum: <><path d="M12 3c4.7 0 8 4 8 9s-3.3 9-8 9-8-4-8-9 3.3-9 8-9Z" /><path d="M4 12h16M12 3c2 2.3 3 5.3 3 9s-1 6.7-3 9c-2-2.3-3-5.3-3-9s1-6.7 3-9Z" /></>,
   };
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -115,6 +115,8 @@
   background: var(--ice-dim);
   border-color: rgba(102, 217, 242, 0.3);
 }
+.app-nav-link[href="/quantum"] { color: #e2bd74; border-color: rgba(226, 189, 116, .24); background: rgba(226, 189, 116, .055); }
+.app-nav-link[href="/quantum"]:hover, .app-nav-link[href="/quantum"].is-active { color: #f1d392; border-color: rgba(226, 189, 116, .58); background: rgba(226, 189, 116, .14); }
 
 .app-nav-link:disabled {
   opacity: 0.5;
@@ -314,6 +316,8 @@
   border-color: rgba(102, 217, 242, 0.3);
   color: var(--ice-400);
 }
+.app-sidebar-link[href="/quantum"] { color: #e2bd74; }
+.app-sidebar-link[href="/quantum"].is-active { color: #f1d392; border-color: rgba(226, 189, 116, .48); background: rgba(226, 189, 116, .12); }
 
 .app-sidebar-link:disabled {
   opacity: 0.5;
