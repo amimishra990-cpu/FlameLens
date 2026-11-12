@@ -56,7 +56,7 @@ const stages = ['Retrospective FLEX analysis', 'Quantum-kinetic mechanism develo
 export function QuantumHypothesis() {
   const [page, setPage] = useState(0); const [flipping, setFlipping] = useState(false); const [storyDone, setStoryDone] = useState(false); const [narrationOn, setNarrationOn] = useState(false); const [ambienceOn, setAmbienceOn] = useState(false); const [narratorName, setNarratorName] = useState(''); const [audioNotice, setAudioNotice] = useState('');
   const [event, setEvent] = useState(1); const [activeData, setActiveData] = useState(0);
-  const touchX = useRef<number | null>(null); const scienceRef = useRef<HTMLElement>(null);
+  const touchX = useRef<number | null>(null); const scienceRef = useRef<HTMLElement>(null); const narrationStartedRef = useRef(false);
   const ambienceRef = useRef<AmbientSound | null>(null); const ambienceSuspendTimer = useRef<number | null>(null);
   const speakPage = useCallback((index: number) => {
     if (!('speechSynthesis' in window)) return;
@@ -67,9 +67,10 @@ export function QuantumHypothesis() {
     if (voice) { utterance.voice = voice; utterance.lang = voice.lang; setNarratorName(voice.name); }
     else { utterance.lang = 'en-US'; setNarratorName('System English voice'); }
     utterance.rate = 0.87; utterance.pitch = 1.02; utterance.volume = 0.96;
-    utterance.onstart = () => { setNarrationOn(true); setAudioNotice(''); };
+    utterance.onstart = () => { narrationStartedRef.current = true; setNarrationOn(true); setAudioNotice(''); };
     utterance.onerror = (event) => {
       if (event.error !== 'canceled' && event.error !== 'interrupted') {
+        narrationStartedRef.current = false;
         setNarrationOn(false); setAudioNotice('Automatic narration was blocked by this browser.');
       }
     };
@@ -164,8 +165,9 @@ export function QuantumHypothesis() {
     const next = Math.max(0, Math.min(story.length - 1, page + direction));
     if (next === page) return;
     setFlipping(true);
-    window.setTimeout(() => { setPage(next); setFlipping(false); if (narrationOn) speakPage(next); }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 760);
-  }, [completeStory, flipping, narrationOn, page, speakPage, startAmbience, storyDone]);
+    speakPage(next);
+    window.setTimeout(() => { setPage(next); setFlipping(false); }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 760);
+  }, [completeStory, flipping, page, speakPage, startAmbience, storyDone]);
   useEffect(() => {
     if (storyDone) return;
     const previousOverflow = document.documentElement.style.overflow;
@@ -181,7 +183,7 @@ export function QuantumHypothesis() {
   }, []);
   useEffect(() => {
     if (!('speechSynthesis' in window)) setAudioNotice('Narration is unavailable in this browser.');
-    else { setNarrationOn(true); speakPage(0); }
+    else speakPage(0);
     startAmbience();
     return () => { window.speechSynthesis?.cancel(); };
   }, [speakPage, startAmbience]);
@@ -193,7 +195,7 @@ export function QuantumHypothesis() {
   useEffect(() => { const key = (e: KeyboardEvent) => { if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return; if (e.key === 'ArrowRight') turn(1); if (e.key === 'ArrowLeft') turn(-1); }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key); }, [turn]);
   const current = story[page];
   return <div className="quantum-hypothesis">
-    {!storyDone && <section className="qh-opening qh-reading-view" aria-label="Immersive FlameLens science storybook" onPointerDownCapture={() => { if (ambienceRef.current?.context.state !== 'running') startAmbience(); }} onKeyDownCapture={() => { if (ambienceRef.current?.context.state !== 'running') startAmbience(); }}>
+    {!storyDone && <section className="qh-opening qh-reading-view" aria-label="Immersive FlameLens science storybook" onPointerDownCapture={() => { if (ambienceRef.current?.context.state !== 'running') startAmbience(); if (!narrationStartedRef.current) speakPage(page); }} onKeyDownCapture={() => { if (ambienceRef.current?.context.state !== 'running') startAmbience(); if (!narrationStartedRef.current) speakPage(page); }}>
       <div className="qh-stars" aria-hidden="true" />
       <div className="qh-book-stage"><div className={`qh-open-book ${flipping ? 'is-flipping' : ''}`} onTouchStart={e => { touchX.current = e.touches[0].clientX; }} onTouchEnd={e => { if (touchX.current === null) return; const dx = e.changedTouches[0].clientX - touchX.current; if (Math.abs(dx) > 45) turn(dx < 0 ? 1 : -1); touchX.current = null; }}>
         <div className="qh-spine"/><div className="qh-page qh-left-page"><span className="qh-chapter">FLAMELENS · FIELD NOTES</span><div className="qh-illustration-frame"><img src={storyIllustrations[page].src} alt={storyIllustrations[page].alt} loading={page < 2 ? 'eager' : 'lazy'} /></div><span className="qh-story-title">{page === 0 ? 'The light, and what followed' : current.title}</span><span className="qh-page-number">{page * 2 + 1}</span></div>
