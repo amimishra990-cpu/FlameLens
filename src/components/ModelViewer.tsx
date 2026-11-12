@@ -157,10 +157,13 @@ export function ModelViewer({
         const size = frameBox.getSize(new THREE.Vector3());
         const center = frameBox.getCenter(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z) || 1;
-        // Detached authoring geometry far outside the framed body is not rendered.
+        // The ISS (B) asset includes a detached, cloud-like geometry cluster above
+        // the station. Keep the cutoff conservative for this asset so its attached
+        // solar arrays and station modules remain intact.
+        const detachedPartLimit = src.endsWith('/iss-b.glb') ? maxDim * 0.6 : maxDim * 1.5;
         for (const p of parts) {
           if (p.box.intersectsBox(frameBox)) continue;
-          if (p.box.getCenter(new THREE.Vector3()).distanceTo(center) > maxDim * 1.5) p.obj.visible = false;
+          if (p.box.getCenter(new THREE.Vector3()).distanceTo(center) > detachedPartLimit) p.obj.visible = false;
         }
         const scale = 2.4 / maxDim;
         model.scale.setScalar(scale);

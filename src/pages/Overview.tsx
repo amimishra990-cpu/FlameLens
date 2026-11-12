@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { OrbitalMark } from '../components/OrbitalMark';
 import { INVESTIGATIONS, getInvestigation, type Investigation } from '../data/investigations';
 import { OverviewStarfield } from '../components/OverviewStarfield';
-import { MetricCard, InteractiveCard, StatRing } from '../components/MetricCard';
+import { MetricCard, InteractiveCard } from '../components/MetricCard';
 
 type OverviewIconKind =
   | 'catalogue'
@@ -400,8 +400,6 @@ export function Overview() {
   const [expandedNotice, setExpandedNotice] = useState<string | null>(null);
   const [expandedTrackNotes, setExpandedTrackNotes] = useState<Record<string, boolean>>({});
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-  const localCoveragePct = totalInvestigations ? Math.round((localCount / totalInvestigations) * 100) : 0;
-
   return (
     <>
       <OverviewStarfield />
@@ -420,21 +418,15 @@ export function Overview() {
               </p>
             </div>
             <div className="overview-hero-visual">
-              <StatRing
-                value={localCoveragePct}
-                label="Local"
-                sublabel={`${localCount}/${totalInvestigations} indexed`}
-                color="ice"
-                size={108}
-              />
-              <div className="overview-evidence-summary">
-                <p className="overview-hero-ring-kicker">Evidence status · by work track</p>
-                <div className="overview-evidence-status-grid">
-                  {modelTracks.map((track) => <div key={track.id} className={`overview-evidence-status is-${track.status}`}>
-                    <span>{track.shortLabel}</span><strong>{track.statusLabel}</strong>
-                  </div>)}
+              <div className="overview-method-panel">
+                <p className="overview-method-kicker">How to read this observatory</p>
+                <h2>From source record to bounded insight</h2>
+                <div className="overview-method-steps">
+                  <div><span>01</span><strong>Source</strong><p>NASA investigation records</p></div>
+                  <div><span>02</span><strong>Audit</strong><p>Rows, units and limits retained</p></div>
+                  <div><span>03</span><strong>Context</strong><p>Claims stay within the evidence</p></div>
                 </div>
-                <p className="overview-hero-ring-copy">Qualitative audit states; no synthetic readiness score.</p>
+                <p className="overview-method-note">Catalogued research evidence · not live telemetry or an operational safety assessment.</p>
               </div>
             </div>
           </div>

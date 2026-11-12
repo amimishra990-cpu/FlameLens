@@ -183,6 +183,18 @@
   border-left: 1px solid var(--ov-line);
 }
 
+.overview-method-panel { width:100%; }
+.overview-method-kicker { margin:0; color:var(--ice-400); font:10px var(--font-mono); letter-spacing:.14em; text-transform:uppercase; }
+.overview-method-panel h2 { margin:10px 0 22px; color:var(--text-100); font:500 clamp(22px,2.4vw,31px)/1.15 var(--font-display); }
+.overview-method-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.overview-method-steps > div { position:relative; min-width:0; padding:12px 12px 11px; border:1px solid var(--ov-line); background:linear-gradient(145deg,rgba(12,23,34,.76),rgba(4,9,15,.5)); }
+.overview-method-steps > div::after { content:""; position:absolute; top:21px; left:100%; width:13px; border-top:1px solid rgba(102,217,242,.38); }
+.overview-method-steps > div:last-child::after { display:none; }
+.overview-method-steps span { display:block; margin-bottom:14px; color:var(--ice-400); font:9px var(--font-mono); letter-spacing:.1em; }
+.overview-method-steps strong { display:block; color:#e4edf1; font:10px var(--font-mono); letter-spacing:.08em; text-transform:uppercase; }
+.overview-method-steps p { margin:6px 0 0; color:var(--text-400); font-size:11px; line-height:1.45; }
+.overview-method-note { margin:15px 0 0; color:var(--text-400); font-size:11px; line-height:1.5; }
+
 .overview-hero-ring-kicker {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -1175,4 +1187,6 @@
   .overview-hero-visual {
     max-width: 100%;
   }
+
+  .overview-method-panel h2 { font-size:25px; }
 }
