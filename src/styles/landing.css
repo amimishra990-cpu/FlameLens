@@ -176,6 +176,7 @@
 
 .earth-limb {
   position: absolute;
+  z-index: 0;
   left: 50%;
   bottom: -64vh;
   width: 160vw;
@@ -188,6 +189,8 @@
 }
 
 .hero-grid {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   gap: 48px;

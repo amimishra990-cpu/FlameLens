@@ -88,7 +88,7 @@ body.qh-reading-lock .site-header,body.qh-reading-lock .fl-assistant-root { disp
 .qh-reader-toolbar .qh-audio-controls button:disabled { opacity:.4; cursor:not-allowed; }
 .qh-book-nav { width:100%; padding:0; }
 .qh-reader-toolbar .qh-book-nav { grid-column:2; grid-row:1; }
-.qh-book-nav button,.qh-narration-button,.qh-music-button { border:1px solid rgba(227,195,126,.5); color:#e8d5a9; background:rgba(7,13,20,.82); }
+.qh-book-nav button,.qh-music-button { border:1px solid rgba(227,195,126,.5); color:#e8d5a9; background:rgba(7,13,20,.82); }
 .qh-reader-toolbar .qh-music-button[aria-pressed="true"] { border-color:rgba(103,213,233,.65); color:#b8edf0; background:rgba(32,89,103,.25); }
 .qh-audio-status { grid-column:1 / -1; grid-row:2; margin:8px 0 0; color:#a9bcc1; font:9px var(--font-mono); text-align:center; }
 .qh-reader-toolbar .qh-hint { grid-column:1 / -1; grid-row:3; margin:0; }

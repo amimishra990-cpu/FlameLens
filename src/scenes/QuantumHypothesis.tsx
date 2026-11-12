@@ -60,12 +60,20 @@ export function QuantumHypothesis() {
   const ambienceRef = useRef<AmbientSound | null>(null); const ambienceSuspendTimer = useRef<number | null>(null);
   const speakPage = useCallback((index: number) => {
     if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const narration = new SpeechSynthesisUtterance(`${story[index].chapter}. ${story[index].title}. ${story[index].text}`);
+    const synthesis = window.speechSynthesis;
+    synthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(`${story[index].chapter}. ${story[index].title}. ${story[index].text}`);
     const voice = preferredNarratorVoice();
-    if (voice) { narration.voice = voice; narration.lang = voice.lang; setNarratorName(voice.name); }
-    narration.rate = 0.87; narration.pitch = 1.02; narration.volume = 0.96;
-    window.speechSynthesis.speak(narration);
+    if (voice) { utterance.voice = voice; utterance.lang = voice.lang; setNarratorName(voice.name); }
+    else { utterance.lang = 'en-US'; setNarratorName('System English voice'); }
+    utterance.rate = 0.87; utterance.pitch = 1.02; utterance.volume = 0.96;
+    utterance.onstart = () => { setNarrationOn(true); setAudioNotice(''); };
+    utterance.onerror = (event) => {
+      if (event.error !== 'canceled' && event.error !== 'interrupted') {
+        setNarrationOn(false); setAudioNotice('Automatic narration was blocked by this browser.');
+      }
+    };
+    synthesis.speak(utterance);
   }, []);
   const stopAmbience = useCallback(() => {
     const sound = ambienceRef.current;
@@ -77,8 +85,7 @@ export function QuantumHypothesis() {
     ambienceSuspendTimer.current = window.setTimeout(() => { if (sound.context.state !== 'closed') void sound.context.suspend().catch(() => {}); }, 2200);
     setAmbienceOn(false);
   }, []);
-  const toggleAmbience = useCallback(() => {
-    if (ambienceOn) { stopAmbience(); return; }
+  const startAmbience = useCallback(() => {
     try {
       let sound = ambienceRef.current;
       if (!sound) {
@@ -117,12 +124,13 @@ export function QuantumHypothesis() {
         const now = activeSound.context.currentTime;
         activeSound.master.gain.cancelScheduledValues(now);
         activeSound.master.gain.setTargetAtTime(0.16, now, 1.25);
+        setAudioNotice(''); setAmbienceOn(true);
       }).catch(() => { setAudioNotice('Ambient audio is unavailable in this browser.'); setAmbienceOn(false); });
-      setAudioNotice(''); setAmbienceOn(true);
     } catch {
       setAudioNotice('Ambient audio is unavailable in this browser.'); setAmbienceOn(false);
     }
-  }, [ambienceOn, stopAmbience]);
+  }, []);
+  const toggleAmbience = useCallback(() => { if (ambienceOn) stopAmbience(); else startAmbience(); }, [ambienceOn, startAmbience, stopAmbience]);
   const completeStory = useCallback(() => {
     if (flipping || storyDone || page !== story.length - 1) return;
     setFlipping(true);
@@ -136,12 +144,13 @@ export function QuantumHypothesis() {
   }, [flipping, page, storyDone, stopAmbience]);
   const turn = useCallback((direction: number) => {
     if (flipping || storyDone) return;
+    if (ambienceRef.current?.context.state !== 'running') startAmbience();
     if (direction > 0 && page === story.length - 1) { completeStory(); return; }
     const next = Math.max(0, Math.min(story.length - 1, page + direction));
     if (next === page) return;
     setFlipping(true);
     window.setTimeout(() => { setPage(next); setFlipping(false); if (narrationOn) speakPage(next); }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 760);
-  }, [completeStory, flipping, narrationOn, page, speakPage, storyDone]);
+  }, [completeStory, flipping, narrationOn, page, speakPage, startAmbience, storyDone]);
   useEffect(() => {
     if (storyDone) return;
     const previousOverflow = document.documentElement.style.overflow;
@@ -155,16 +164,17 @@ export function QuantumHypothesis() {
     window.speechSynthesis?.addEventListener('voiceschanged', updateVoice);
     return () => window.speechSynthesis?.removeEventListener('voiceschanged', updateVoice);
   }, []);
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) setAudioNotice('Narration is unavailable in this browser.');
+    else { setNarrationOn(true); speakPage(0); }
+    startAmbience();
+    return () => { window.speechSynthesis?.cancel(); };
+  }, [speakPage, startAmbience]);
   useEffect(() => () => {
     if (ambienceSuspendTimer.current !== null) window.clearTimeout(ambienceSuspendTimer.current);
     if (ambienceRef.current) { ambienceRef.current.oscillators.forEach((oscillator) => { try { oscillator.stop(); } catch { /* Already stopped. */ } }); void ambienceRef.current.context.close().catch(() => {}); ambienceRef.current = null; }
   }, []);
   useEffect(() => { if (storyDone) scienceRef.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }, [storyDone]);
-  const toggleNarration = useCallback(() => {
-    if (narrationOn) { window.speechSynthesis?.cancel(); setNarrationOn(false); return; }
-    if (!ambienceOn) toggleAmbience();
-    setNarrationOn(true); speakPage(page);
-  }, [ambienceOn, narrationOn, page, speakPage, toggleAmbience]);
   useEffect(() => { const key = (e: KeyboardEvent) => { if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) return; if (e.key === 'ArrowRight') turn(1); if (e.key === 'ArrowLeft') turn(-1); }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key); }, [turn]);
   const current = story[page];
   return <div className="quantum-hypothesis">
@@ -174,7 +184,7 @@ export function QuantumHypothesis() {
         <div className="qh-spine"/><div className="qh-page qh-left-page"><span className="qh-chapter">FLAMELENS · FIELD NOTES</span><div className="qh-illustration-frame"><img src={storyIllustrations[page].src} alt={storyIllustrations[page].alt} loading={page < 2 ? 'eager' : 'lazy'} /></div><span className="qh-story-title">{page === 0 ? 'The light, and what followed' : current.title}</span><span className="qh-page-number">{page * 2 + 1}</span></div>
         <div className="qh-page qh-right-page" aria-live="polite"><span className="qh-chapter">{current.chapter}</span><h1 className="qh-story-title">{current.title}</h1><div className="qh-story-text">{current.text.split('\n\n').map((paragraph, i) => <p key={i}>{paragraph}</p>)}</div><span className="qh-page-number">{page * 2 + 2}</span></div>
         <div className="qh-turn-leaf" aria-hidden="true" />
-      </div><div className="qh-reader-toolbar"><div className="qh-audio-controls" role="group" aria-label="Story audio controls"><button className="qh-narration-button" onClick={toggleNarration} disabled={!('speechSynthesis' in window)} aria-pressed={narrationOn}>{narrationOn ? 'Ⅱ Stop narration' : '▷ Listen to story'}</button><button className="qh-music-button" onClick={toggleAmbience} disabled={!('AudioContext' in window)} aria-pressed={ambienceOn}>{ambienceOn ? '♪ Space ambience: on' : '♪ Space ambience: off'}</button></div><div className="qh-book-nav"><button onClick={() => turn(-1)} disabled={page === 0 || flipping}>← Previous</button><span>SPREAD {String(page + 1).padStart(2, '0')} / {String(story.length).padStart(2, '0')}</span><button onClick={() => turn(1)} disabled={flipping}>{page === story.length - 1 ? 'Continue to research →' : 'Turn page →'}</button></div><p className="qh-audio-status" aria-live="polite">{audioNotice || `Narrator: ${narratorName || 'best available English voice'}${ambienceOn ? ' · soft ambient music playing' : ''}`}</p><p className="qh-hint">Turn each page to continue · use ← → keys</p></div></div>
+      </div><div className="qh-reader-toolbar"><div className="qh-audio-controls" role="group" aria-label="Story audio controls"><button className="qh-music-button" onClick={toggleAmbience} disabled={!('AudioContext' in window)} aria-pressed={ambienceOn}>{ambienceOn ? '♪ Mute soundtrack' : '♪ Enable soundtrack'}</button></div><div className="qh-book-nav"><button onClick={() => turn(-1)} disabled={page === 0 || flipping}>← Previous</button><span>SPREAD {String(page + 1).padStart(2, '0')} / {String(story.length).padStart(2, '0')}</span><button onClick={() => turn(1)} disabled={flipping}>{page === story.length - 1 ? 'Continue to research →' : 'Turn page →'}</button></div><p className="qh-audio-status" aria-live="polite">{audioNotice || `Narration ${narrationOn ? 'plays automatically' : 'will start automatically'} · ${narratorName || 'best available English voice'} · ${ambienceOn ? 'ambient score playing' : 'ambient score muted'}`}</p><p className="qh-hint">Turn each page to continue · use ← → keys</p></div></div>
     </section>}
     <section className="qh-science" ref={scienceRef} id="qh-science">
       <div className="qh-science-head"><p className="qh-eyebrow">FROM STORY TO RESEARCH</p><h2>Can a Flame Persist After Its Light Has Gone?</h2><p className="qh-lede">A quantum-kinetically informed hypothesis for cool-flame persistence in microgravity.</p><p className="qh-caveat">The observations motivate a test. They do not establish that tunnelling causes post-luminous persistence.</p></div>
